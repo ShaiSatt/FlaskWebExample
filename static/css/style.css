@@ -1,0 +1,184 @@
+/* General Body Styles */
+body {
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+    color: #333;
+}
+
+/* Header Styles */
+header {
+    background-color: #333;
+    color: white;
+    padding: 1rem 0;
+    text-align: center;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 2rem;
+}
+
+header .logoimg {
+    width: 50px;
+    height: auto;
+}
+
+header .logoimg:hover {
+    transform: scale(1.1);
+    transition: transform 0.3s;
+}
+
+/* Navigation Styles */
+nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+}
+
+nav ul li {
+    margin-left: 20px;
+}
+
+nav ul li a {
+    color: white;
+    text-decoration: none;
+    font-size: 1rem;
+    padding: 10px 15px;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+}
+
+nav ul li a:hover {
+    background-color: #555;
+    text-decoration: none;
+}
+
+/* Main Content Styles */
+main {
+    padding: 20px;
+    min-height: 80vh;
+}
+
+/* Footer Styles */
+footer {
+    text-align: center;
+    padding: 20px;
+    background-color: #333;
+    color: white;
+}
+
+/* Container for Centering Content */
+.container {
+    max-width: 960px;
+    margin: auto;
+    overflow: hidden;
+    padding: 0 20px;
+}
+
+/* Table Styles */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+table, th, td {
+    border: 1px solid #ddd;
+}
+
+th, td {
+    padding: 12px;
+    text-align: left;
+}
+
+th {
+    background-color: #f2f2f2;
+}
+
+/* Form Styles */
+form {
+    margin-top: 20px;
+}
+
+form label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+form input[type="text"],
+form input[type="password"] {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+}
+
+form input[type="submit"] {
+    background-color: #333;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+form input[type="submit"]:hover {
+    background-color: #555;
+}
+
+/* Error Message Styles */
+.error-message {
+    color: red;
+    margin-bottom: 15px;
+}
+
+/* Users Table Styles */
+.userstable {
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.userstable thead {
+    background-color: #333;
+    color: rgb(14, 32, 225);
+}
+
+.userstable th, .userstable td {
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.userstable tbody tr:nth-child(odd) {
+    background-color: #f9f9f9;
+}
+
+.userstable tbody tr:hover {
+    background-color: #f1f1f1;
+}
+/* style for flash messages */
+.flash-box {
+    width: 40%;
+    margin: 20px auto;        /* מרכז את התיבה */
+    padding: 12px;
+    border: 2px solid black;  /* מסגרת שחורה */
+    border-radius: 8px;
+    text-align: center;       /* טקסט ממורכז */
+    font-weight: bold;
+}
+/* הצלחה */
+.success {
+    background-color: #d4edda;
+    color: #155724;
+}
+/*  שגיאה */
+.error {
+    background-color: #f8d7da;
+    color: #721c24;
+}
