@@ -5,19 +5,21 @@
 {% endblock %}
 
 {% block content %}
-    <h1>Users</h1>
-    <table class="userstable">
-        <thead>
-            <tr>
-                <th>Username</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for user in users %}
-            <tr>
-                <td>{{ user }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<h2>User List</h2>
+<table border="1">
+    <tr>
+        <th>Username</th>
+        <th>Password</th>
+        <th>Email</th>
+        <th>Phone</th>
+    </tr>
+    {% for user in users %}
+    <tr>
+        <td>{{ user[0] }}</td>
+        <td>{{ user[1] }}</td>
+        <td>{{ user[2] }}</td>
+        <td>{{ user[3] }}</td>
+    </tr>
+    {% endfor %}
+</table>
 {% endblock %}

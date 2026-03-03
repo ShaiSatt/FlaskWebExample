@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %} 
+    update
+{% endblock %}
+
+{% block content %}
+  <h2> Update User Details</h2>
+  <form action="/update" method="post">
+    <label> <b> Username: {{ user_details[0] }} </b> </label><br>
+
+
+    <!-- Inputs for updating details -->
+    <label for="new_password">New Password: </label>
+    <input type="text" id="new_password" name="new_password" value= {{ user_details[1] }} ><br>
+    <label for="new_email">New Email:</label>
+    <input type="email" id="new_email" name="new_email" value= {{ user_details[2] }} ><br>
+    <label for="new_phone">New Phone:</label>
+    <input type="text" id="new_phone" name="new_phone" value= {{ user_details[3] }}><br><br>
+
+    <input type="submit" value="Update Details">
+</form>
+<form action="/delete" onclick="return performAction()" method="post">
+    <button class=error-message type="submit">Delete Me!!</button>
+</form>
+<br>
+<script>
+    function performAction() {
+        return window.confirm("בטוח שרוצה למחוק את המשתמש שלך לצמיתות?");
+    }
+</script>
+{% endblock %}
