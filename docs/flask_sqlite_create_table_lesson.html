@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>לומדה: הגדרת מסד נתונים SQLite</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;600;700;900&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0f14;
+    --surface: #15171f;
+    --surface2: #1d2030;
+    --accent: #a78bfa;
+    --accent2: #38bdf8;
+    --success: #4ade80;
+    --danger: #f87171;
+    --warn: #fb923c;
+    --text: #e2e8f0;
+    --text-muted: #64748b;
+    --border: #232640;
+    --code-bg: #090a0f;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Heebo', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+
+  .hero {
+    background: linear-gradient(160deg, #130f20 0%, #0e0f14 60%);
+    border-bottom: 1px solid var(--border);
+    padding: 3rem 2rem 2.5rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -40%; left: 50%;
+    transform: translateX(-50%);
+    width: 700px; height: 400px;
+    background: radial-gradient(ellipse, rgba(167,139,250,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .badge {
+    display: inline-block;
+    background: rgba(167,139,250,0.12);
+    color: var(--accent);
+    border: 1px solid rgba(167,139,250,0.35);
+    border-radius: 999px;
+    padding: 0.3rem 1.1rem;
+    font-size: 0.8rem; font-weight: 600; letter-spacing: 0.05em;
+    margin-bottom: 1rem;
+  }
+  .hero h1 { font-size: clamp(2rem, 5vw, 3rem); font-weight: 900; line-height: 1.2; margin-bottom: 1rem; }
+  .hero h1 span { color: var(--accent); }
+  .hero p { color: var(--text-muted); font-size: 1.05rem; max-width: 540px; margin: 0 auto; }
+
+  .progress-container {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 1rem 2rem; display: flex; align-items: center; gap: 1rem;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .progress-bar { flex: 1; height: 5px; background: var(--border); border-radius: 999px; overflow: hidden; }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 999px; transition: width 0.5s ease; width: 0%;
+  }
+  .progress-text { font-size: 0.82rem; color: var(--text-muted); white-space: nowrap; }
+
+  .nav-dots { display: flex; justify-content: center; gap: 0.5rem; padding: 1.2rem; flex-wrap: wrap; }
+  .dot { width: 11px; height: 11px; border-radius: 50%; background: var(--border); cursor: pointer; transition: all 0.3s; }
+  .dot.active { background: var(--accent); transform: scale(1.35); }
+  .dot.completed { background: var(--accent2); }
+
+  .container { max-width: 880px; margin: 0 auto; padding: 0 1.5rem; }
+
+  .slide { display: none; animation: fadeIn 0.35s ease; }
+  .slide.active { display: block; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 2rem; margin-bottom: 1.5rem;
+  }
+  .card.purple {
+    border-color: rgba(167,139,250,0.4);
+    background: linear-gradient(135deg, rgba(167,139,250,0.05) 0%, var(--surface) 100%);
+  }
+  .card.sky {
+    border-color: rgba(56,189,248,0.4);
+    background: linear-gradient(135deg, rgba(56,189,248,0.05) 0%, var(--surface) 100%);
+  }
+  .card.success-card {
+    border-color: rgba(74,222,128,0.35);
+    background: rgba(74,222,128,0.04);
+  }
+  .card.danger-card {
+    border-color: rgba(248,113,113,0.35);
+    background: rgba(248,113,113,0.04);
+  }
+  .card h2 { font-size: 1.4rem; font-weight: 700; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.6rem; }
+  .card h3 { font-size: 1.05rem; font-weight: 600; margin: 1.2rem 0 0.6rem; color: var(--accent2); }
+  .card p { color: #94a3b8; margin-bottom: 0.7rem; }
+
+  .code-block {
+    background: var(--code-bg); border: 1px solid var(--border);
+    border-radius: 12px; overflow: hidden; margin: 1rem 0;
+    font-family: 'Fira Code', monospace;
+  }
+  .code-header {
+    background: var(--surface2); padding: 0.55rem 1rem;
+    display: flex; align-items: center; border-bottom: 1px solid var(--border);
+  }
+  .code-filename { font-size: 0.78rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.5rem; }
+  .dr { width:9px;height:9px;border-radius:50%;background:#ff5f57;display:inline-block; }
+  .dy { width:9px;height:9px;border-radius:50%;background:#febc2e;display:inline-block; }
+  .dg { width:9px;height:9px;border-radius:50%;background:#28c840;display:inline-block; }
+  .code-body {
+    padding: 1.1rem 1.3rem; overflow-x: auto;
+    font-size: 0.83rem; line-height: 1.9;
+    direction: ltr; text-align: left;
+  }
+  .code-body pre { white-space: pre; }
+
+  /* syntax */
+  .kw      { color: #c792ea; }
+  .fn      { color: #82aaff; }
+  .str     { color: #c3e88d; }
+  .comment { color: #546e7a; font-style: italic; }
+  .py-imp  { color: #a78bfa; }
+  .sql-kw  { color: #38bdf8; font-weight: 600; }
+  .sql-ty  { color: #fb923c; }
+  .sql-con { color: #4ade80; font-weight: 600; }
+
+  /* highlight lines */
+  .hl-line  { background: rgba(167,139,250,0.10); display: block; margin: 0 -1.3rem; padding: 0 1.3rem; border-right: 3px solid var(--accent); }
+  .hl-blue  { background: rgba(56,189,248,0.08);  display: block; margin: 0 -1.3rem; padding: 0 1.3rem; border-right: 3px solid var(--accent2); }
+  .hl-green { background: rgba(74,222,128,0.08);  display: block; margin: 0 -1.3rem; padding: 0 1.3rem; border-right: 3px solid var(--success); }
+  .hl-warn  { background: rgba(251,146,60,0.08);  display: block; margin: 0 -1.3rem; padding: 0 1.3rem; border-right: 3px solid var(--warn); }
+  .hl-red   { background: rgba(248,113,113,0.08); display: block; margin: 0 -1.3rem; padding: 0 1.3rem; border-right: 3px solid var(--danger); }
+
+  /* annotated lines */
+  .annotated-line {
+    display: flex; align-items: flex-start; gap: 0.8rem;
+    margin: 0.6rem 0; padding: 0.7rem 0.9rem;
+    background: var(--surface2); border-radius: 8px;
+    border-right: 3px solid var(--accent); font-size: 0.9rem;
+  }
+  .annotated-line.blue  { border-color: var(--accent2); }
+  .annotated-line.green { border-color: var(--success); }
+  .annotated-line.red   { border-color: var(--danger); }
+  .annotated-line.warn  { border-color: var(--warn); }
+  .annotated-line code {
+    font-family: 'Fira Code', monospace; font-size: 0.81rem;
+    background: var(--code-bg); padding: 0.15rem 0.5rem;
+    border-radius: 5px; color: var(--accent); white-space: nowrap; flex-shrink: 0;
+  }
+  .annotated-line.blue  code { color: var(--accent2); }
+  .annotated-line.green code { color: var(--success); }
+  .annotated-line.red   code { color: var(--danger); }
+  .annotated-line.warn  code { color: var(--warn); }
+  .annotated-line .desc { color: #94a3b8; font-size: 0.88rem; }
+
+  /* callouts */
+  .callout {
+    padding: 0.85rem 1rem; border-radius: 10px; margin: 0.9rem 0;
+    font-size: 0.9rem; display: flex; gap: 0.7rem; align-items: flex-start;
+  }
+  .callout.purple { background: rgba(167,139,250,0.07); border: 1px solid rgba(167,139,250,0.25); }
+  .callout.blue   { background: rgba(56,189,248,0.07);  border: 1px solid rgba(56,189,248,0.25); }
+  .callout.green  { background: rgba(74,222,128,0.07);  border: 1px solid rgba(74,222,128,0.25); }
+  .callout.red    { background: rgba(248,113,113,0.07); border: 1px solid rgba(248,113,113,0.25); }
+  .callout.warn   { background: rgba(251,146,60,0.07);  border: 1px solid rgba(251,146,60,0.25); }
+  .callout .icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 0.05rem; }
+  .callout .body { color: #94a3b8; }
+  .callout .body strong { color: var(--text); }
+
+  /* before/after two-col */
+  .before-after { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+  .ba-label { font-size: 0.82rem; font-weight: 700; margin-bottom: 0.5rem; padding: 0.35rem 0.8rem; border-radius: 6px; display: inline-block; }
+  .ba-label.red   { background: rgba(248,113,113,0.15); color: var(--danger); }
+  .ba-label.green { background: rgba(74,222,128,0.15);  color: var(--success); }
+
+  /* steps */
+  .steps { display: flex; flex-direction: column; gap: 0; margin: 0.9rem 0; }
+  .step  { display: flex; gap: 1rem; align-items: flex-start; padding: 0.9rem 0; border-bottom: 1px solid var(--border); }
+  .step:last-child { border-bottom: none; }
+  .step-num {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--accent); color: #0e0f14;
+    font-size: 0.75rem; font-weight: 900;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 0.1rem;
+  }
+  .step-num.blue  { background: var(--accent2); }
+  .step-num.green { background: var(--success); }
+  .step-body .step-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 0.2rem; }
+  .step-body .step-desc  { color: #94a3b8; font-size: 0.87rem; }
+
+  /* DB visual table */
+  .db-visual { border-radius: 10px; overflow: hidden; border: 1px solid var(--border); margin: 0.9rem 0; }
+  .db-visual-header {
+    background: var(--surface2); padding: 0.5rem 1rem;
+    display: flex; align-items: center; gap: 0.6rem; border-bottom: 1px solid var(--border);
+  }
+  .db-name { font-family: 'Fira Code', monospace; font-size: 0.82rem; color: var(--accent); font-weight: 600; }
+  .db-inner { width: 100%; border-collapse: collapse; background: var(--code-bg); }
+  .db-inner th {
+    background: var(--surface2); padding: 0.55rem 1rem; text-align: right;
+    font-family: 'Fira Code', monospace; font-size: 0.73rem; color: var(--accent2);
+    font-weight: 700; letter-spacing: 0.05em; border-bottom: 1px solid var(--border);
+  }
+  .db-inner td {
+    padding: 0.6rem 1rem; font-family: 'Fira Code', monospace;
+    font-size: 0.8rem; border-bottom: 1px solid var(--border);
+    color: var(--text-muted); vertical-align: middle;
+  }
+  .db-inner tr:last-child td { border-bottom: none; }
+  .db-inner td.col-pk   { color: var(--success); font-weight: 600; }
+  .db-inner td.col-name { color: var(--accent); }
+
+  /* pill badges */
+  .pill-badge { display: inline-block; padding: 0.12rem 0.5rem; border-radius: 999px; font-size: 0.72rem; font-weight: 700; font-family: 'Fira Code', monospace; }
+  .pb-text { background: rgba(56,189,248,0.12);  color: var(--accent2); }
+  .pb-pk   { background: rgba(74,222,128,0.15);  color: var(--success); }
+  .pb-nn   { background: rgba(251,146,60,0.12);  color: var(--warn); }
+  .pb-opt  { background: rgba(100,116,139,0.25); color: var(--text-muted); }
+  .pb-no   { background: rgba(248,113,113,0.15); color: var(--danger); }
+  .pb-yes  { background: rgba(74,222,128,0.15);  color: var(--success); }
+
+  /* checklist */
+  .checklist { list-style: none; }
+  .checklist li {
+    padding: 0.55rem 0; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 0.8rem; font-size: 0.93rem; color: #94a3b8;
+  }
+  .checklist li::before { content: '✓'; color: var(--accent); font-weight: 700; flex-shrink: 0; }
+
+  /* quiz */
+  .quiz-q { font-size: 1rem; font-weight: 600; margin-bottom: 0.9rem; }
+  .quiz-options { display: flex; flex-direction: column; gap: 0.6rem; }
+  .quiz-opt {
+    background: var(--surface2); border: 2px solid var(--border);
+    border-radius: 10px; padding: 0.75rem 1.1rem; cursor: pointer;
+    transition: all 0.2s; font-size: 0.93rem;
+    direction: rtl; text-align: right; font-family: 'Heebo', sans-serif;
+  }
+  .quiz-opt:hover:not(.locked) { border-color: var(--accent); background: rgba(167,139,250,0.07); }
+  .quiz-opt.correct { border-color: var(--success); background: rgba(74,222,128,0.09); color: var(--success); }
+  .quiz-opt.wrong   { border-color: var(--danger);  background: rgba(248,113,113,0.09); color: var(--danger); }
+  .quiz-feedback { margin-top: 0.9rem; padding: 0.85rem; border-radius: 10px; display: none; font-size: 0.9rem; }
+  .quiz-feedback.show { display: block; }
+  .quiz-feedback.correct { background: rgba(74,222,128,0.09);  border: 1px solid rgba(74,222,128,0.3);  color: var(--success); }
+  .quiz-feedback.wrong   { background: rgba(248,113,113,0.09); border: 1px solid rgba(248,113,113,0.3); color: var(--danger); }
+
+  ic { font-family: 'Fira Code', monospace; font-size: 0.86em; background: var(--surface2); padding: 0.1em 0.4em; border-radius: 4px; color: var(--accent); }
+  .hl  { color: var(--accent);  font-weight: 600; }
+  .hl2 { color: var(--accent2); font-weight: 600; }
+  .hlg { color: var(--success); font-weight: 600; }
+  .hlr { color: var(--danger);  font-weight: 600; }
+  .hlw { color: var(--warn);    font-weight: 600; }
+
+  .btn-row { display: flex; justify-content: space-between; align-items: center; padding: 2rem 0 3rem; gap: 1rem; }
+  .btn {
+    padding: 0.75rem 1.8rem; border-radius: 10px; border: none;
+    cursor: pointer; font-size: 0.95rem; font-family: 'Heebo', sans-serif;
+    font-weight: 600; transition: all 0.25s; display: flex; align-items: center; gap: 0.4rem;
+  }
+  .btn-primary { background: var(--accent); color: #0e0f14; }
+  .btn-primary:hover { filter: brightness(1.1); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(167,139,250,0.3); }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { background: var(--surface); }
+  .slide-num { color: var(--text-muted); font-size: 0.88rem; }
+
+  .completion { text-align: center; padding: 3rem 1rem; }
+  .completion .trophy { font-size: 4.5rem; margin-bottom: 1rem; }
+  .completion h2 { font-size: 1.9rem; font-weight: 900; margin-bottom: 0.5rem; color: var(--accent); }
+  .completion p { color: var(--text-muted); }
+
+  @media (max-width: 640px) {
+    .before-after { grid-template-columns: 1fr; }
+    .btn-row { flex-direction: column; }
+    .btn { width: 100%; justify-content: center; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="badge">🎓 לומדת Flask — תיכון מגידו</div>
+  <h1>מסד נתונים SQLite<br><span>הגדרה והקמה</span></h1>
+  <p>לומדים כיצד יוצרים מסד נתונים ב-Python — מה זה SQLite, כיצד יוצרים טבלה, ומה משמעות כל שדה</p>
+</div>
+
+<div class="progress-container">
+  <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+  <div class="progress-text" id="progressText">שלב 1 מתוך 7</div>
+</div>
+
+<div class="nav-dots" id="navDots"></div>
+
+<div class="container">
+
+<!-- ══════════════════════ SLIDE 1 ══════════════════════ -->
+<div class="slide active" id="slide-1">
+  <div class="card purple">
+    <h2>🗄️ למה בכלל צריך מסד נתונים?</h2>
+    <p>עד עכשיו המשתמשים נשמרו ברשימת Python — <ic>valid_users = []</ic>. הבעיה: ברגע שהשרת נכבה, כל הנתונים נמחקים. מסד נתונים פותר זאת.</p>
+  </div>
+
+  <div class="before-after">
+    <div>
+      <div class="ba-label red">❌ רשימה בזיכרון</div>
+      <div class="code-block">
+        <div class="code-body"><pre>valid_users = []
+
+<span class="comment"># כשהשרת נכבה:</span>
+<span class="comment"># valid_users = []  ← ריק שוב</span>
+<span class="comment"># כל ההרשמות אבדו!</span></pre></div>
+      </div>
+    </div>
+    <div>
+      <div class="ba-label green">✅ SQLite — קובץ DB</div>
+      <div class="code-block">
+        <div class="code-body"><pre><span class="comment"># נשמר בקובץ users.db</span>
+<span class="comment"># שרת כבוי ועולה שוב?</span>
+<span class="comment"># הנתונים עדיין שם!</span>
+<span class="comment"># + סיסמה, אמייל, טלפון</span></pre></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>💡 מה זה SQLite?</h3>
+    <p>SQLite הוא מסד נתונים שמאוחסן בקובץ יחיד על הדיסק. הוא מובנה לתוך Python — לא צריך להתקין שום דבר נוסף.</p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <div class="step-title">קובץ אחד בלבד</div>
+          <div class="step-desc">כל מסד הנתונים יושב בקובץ <ic>users.db</ic> בתיקיית הפרויקט. אפשר לשלוח, לגבות, למחוק — כמו קובץ רגיל.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num blue">2</div>
+        <div class="step-body">
+          <div class="step-title">מובנה ב-Python</div>
+          <div class="step-desc">ספריית <ic>sqlite3</ic> מגיעה עם כל התקנת Python. אין <ic>pip install</ic>. פשוט <ic>import sqlite3</ic> ומתחילים.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num green">3</div>
+        <div class="step-body">
+          <div class="step-title">שפת SQL</div>
+          <div class="step-desc">מתקשרים עם ה-DB בעזרת שפת SQL — שפה סטנדרטית לניהול נתונים. נלמד אותה צעד אחר צעד.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card sky">
+    <h3>💡 מה נלמד בלומדה זו?</h3>
+    <ul class="checklist">
+      <li>מה זה SQLite ולמה הוא מתאים לפרויקטים קטנים</li>
+      <li>הקוד המלא של <ic>create_table()</ic> — פירוק שלב אחר שלב</li>
+      <li>פתיחת חיבור ל-DB: <ic>connect()</ic> ו-<ic>cursor()</ic></li>
+      <li>פקודת <ic>CREATE TABLE IF NOT EXISTS</ic> — ומה כל מילה עושה</li>
+      <li>הגדרת 4 שדות: שם, סוג נתון ומגבלות</li>
+      <li>שמירה וסגירה: <ic>commit()</ic> ו-<ic>close()</ic></li>
+    </ul>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 2 ══════════════════════ -->
+<div class="slide" id="slide-2">
+  <div class="card purple">
+    <h2>📋 הקוד המלא — create_table()</h2>
+    <p>הנה הפונקציה המלאה מ-main.py שאחראית על יצירת הטבלה. בשקפים הבאים נפרק כל שורה:</p>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header">
+      <div class="code-filename"><span class="dr"></span><span class="dy"></span><span class="dg"></span>&nbsp; main.py</div>
+    </div>
+    <div class="code-body"><pre><span class="py-imp">import</span> sqlite3                          <span class="comment">← חלק א׳: ייבוא</span>
+
+<span class="kw">def</span> <span class="fn">create_table</span>():                       <span class="comment">← חלק ב׳: הפונקציה</span>
+<span class="hl-line">    conn = sqlite3.<span class="fn">connect</span>(<span class="str">'users.db'</span>)  </span><span class="comment">← פתיחת חיבור</span>
+<span class="hl-line">    c = conn.<span class="fn">cursor</span>()                    </span><span class="comment">← יצירת cursor</span>
+    c.<span class="fn">execute</span>(<span class="str">'''</span>
+<span class="hl-blue">        <span class="sql-kw">CREATE TABLE</span> <span class="sql-con">IF NOT EXISTS</span> users</span>
+<span class="hl-blue">        (</span>
+<span class="hl-blue">            username <span class="sql-ty">TEXT</span>    <span class="sql-con">PRIMARY KEY  NOT NULL</span>,</span>
+<span class="hl-blue">            password <span class="sql-ty">TEXT</span>                  <span class="sql-con">NOT NULL</span>,</span>
+<span class="hl-blue">            email    <span class="sql-ty">TEXT</span>                  <span class="sql-con">NOT NULL</span>,</span>
+<span class="hl-blue">            phone    <span class="sql-ty">TEXT</span></span>
+<span class="hl-blue">        )</span><span class="str">'''</span>)
+<span class="hl-green">    conn.<span class="fn">commit</span>()                         </span><span class="comment">← שמירה לדיסק</span>
+<span class="hl-green">    conn.<span class="fn">close</span>()                          </span><span class="comment">← סגירת חיבור</span>
+
+<span class="hl-warn">create_table()                           </span><span class="comment">← חלק ג׳: קריאה מיידית</span></pre></div>
+  </div>
+
+  <div class="callout purple">
+    <span class="icon">💡</span>
+    <div class="body">בשקפים הבאים נפרק כל צבע בנפרד: <span class="hl">סגול</span> = חיבור ל-DB, <span class="hl2">כחול</span> = הגדרת הטבלה, <span class="hlg">ירוק</span> = שמירה וסגירה, <span class="hlw">כתום</span> = קריאה לפונקציה.</div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 3 ══════════════════════ -->
+<div class="slide" id="slide-3">
+  <div class="card purple">
+    <h2>🔌 שלב 1 — פתיחת חיבור ל-DB</h2>
+    <p>לפני שאפשר לעשות כל פעולה על ה-DB, חייבים לפתוח חיבור אליו:</p>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header"><div class="code-filename"><span class="dr"></span><span class="dy"></span><span class="dg"></span>&nbsp; main.py</div></div>
+    <div class="code-body"><pre><span class="kw">def</span> <span class="fn">create_table</span>():
+<span class="hl-line">    conn = sqlite3.<span class="fn">connect</span>(<span class="str">'users.db'</span>)</span>
+<span class="hl-line">    c = conn.<span class="fn">cursor</span>()</span>
+    ...</pre></div>
+  </div>
+
+  <div class="annotated-line">
+    <code>sqlite3.connect('users.db')</code>
+    <div class="desc"><strong>פותח חיבור לקובץ.</strong> אם הקובץ <ic>users.db</ic> כבר קיים — פותח אותו. אם לא קיים — <strong>יוצר אותו אוטומטית</strong>. מחזיר אובייקט חיבור שאנחנו שומרים ב-<ic>conn</ic>.</div>
+  </div>
+  <div class="annotated-line blue">
+    <code>conn.cursor()</code>
+    <div class="desc"><strong>יוצר cursor</strong> — כמו "עט" שכותב ומוחק בתוך ה-DB. דרכו שולחים את כל פקודות ה-SQL. המוסכמה בפרויקט: לקרוא לו <ic>c</ic>.</div>
+  </div>
+
+  <div class="card">
+    <h3>📂 היכן נוצר users.db?</h3>
+    <p>SQLite יוצר את הקובץ <strong>באותה תיקייה שממנה מריצים את main.py</strong>:</p>
+    <div class="code-block">
+      <div class="code-body"><pre>FlaskWebExample/
+├── main.py
+├── <span class="hlg">users.db</span>        <span class="comment">← נוצר כאן בהרצה ראשונה</span>
+├── templates/
+└── static/</pre></div>
+    </div>
+    <div class="callout green">
+      <span class="icon">💡</span>
+      <div class="body"><strong>הרצה ראשונה:</strong> <ic>users.db</ic> לא קיים ← <ic>connect()</ic> יוצר קובץ ריק ← <ic>create_table()</ic> מוסיפה את הטבלה. <strong>הרצה שנייה:</strong> <ic>users.db</ic> קיים ← <ic>connect()</ic> פותח אותו ← <ic>IF NOT EXISTS</ic> דואג שהטבלה לא תיכתב שוב.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 4 ══════════════════════ -->
+<div class="slide" id="slide-4">
+  <div class="card purple">
+    <h2>🏗️ שלב 2 — פקודת CREATE TABLE</h2>
+    <p>לאחר פתיחת החיבור, שולחים פקודת SQL ליצירת הטבלה:</p>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header"><div class="code-filename"><span class="dr"></span><span class="dy"></span><span class="dg"></span>&nbsp; main.py — שאילתת ה-SQL</div></div>
+    <div class="code-body"><pre>    c.<span class="fn">execute</span>(<span class="str">'''</span>
+<span class="hl-blue">        <span class="sql-kw">CREATE TABLE</span> <span class="sql-con">IF NOT EXISTS</span> users</span>
+        (
+            ...
+        )
+    <span class="str">'''</span>)</pre></div>
+  </div>
+
+  <div class="annotated-line">
+    <code>c.execute( ... )</code>
+    <div class="desc"><strong>שולח שאילתת SQL</strong> ל-DB דרך ה-cursor. מקבל מחרוזת עם פקודת SQL. ה-<ic>''' '''</ic> מאפשר כתיבה בכמה שורות.</div>
+  </div>
+  <div class="annotated-line blue">
+    <code>CREATE TABLE</code>
+    <div class="desc"><strong>פקודת SQL</strong> שיוצרת טבלה חדשה. SQL כתוב באותיות גדולות במוסכמה — Python לא מחייב זאת, אבל זה קריא יותר.</div>
+  </div>
+  <div class="annotated-line green">
+    <code>IF NOT EXISTS</code>
+    <div class="desc"><strong>קריטי!</strong> בלעדיו: בכל הרצת שרת תנסה ליצור טבלה שכבר קיימת — שגיאה. עם IF NOT EXISTS: "אם כבר קיים — תדלג".</div>
+  </div>
+  <div class="annotated-line warn">
+    <code>users</code>
+    <div class="desc"><strong>שם הטבלה.</strong> כמו שם לרשימה. יכול להיות כל שם — בפרויקט בחרנו <ic>users</ic> כי זה הגיוני.</div>
+  </div>
+
+  <div class="card">
+    <h3>📊 מה ההבדל בין טבלה לגיליון אקסל?</h3>
+    <p>טבלת SQL דומה לגיליון — שורות ועמודות. ההבדל: כל עמודה מוגדרת מראש עם <strong>שם, סוג נתון ומגבלות</strong>.</p>
+    <div class="db-visual">
+      <div class="db-visual-header">
+        <span>🗃️</span>
+        <span class="db-name">users</span>
+        <span style="font-size:0.72rem;color:var(--text-muted);font-family:'Fira Code',monospace;margin-right:auto;margin-left:0;">&nbsp;— טבלה ריקה לאחר CREATE TABLE</span>
+      </div>
+      <table class="db-inner">
+        <tr><th>username</th><th>password</th><th>email</th><th>phone</th></tr>
+        <tr>
+          <td colspan="4" style="text-align:center;color:var(--text-muted);font-style:italic;padding:1.2rem;">אין שורות עדיין — הטבלה ריקה</td>
+        </tr>
+      </table>
+    </div>
+    <div class="callout blue">
+      <span class="icon">💡</span>
+      <div class="body">CREATE TABLE מגדיר רק את <strong>המבנה</strong> — העמודות. השורות (הנתונים עצמם) יתווספו מאוחר יותר עם INSERT, שנלמד בלומדה הבאה.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 5 ══════════════════════ -->
+<div class="slide" id="slide-5">
+  <div class="card purple">
+    <h2>📐 שלב 3 — הגדרת השדות (עמודות)</h2>
+    <p>בתוך הסוגריים של CREATE TABLE מגדירים כל עמודה — שם, סוג נתון ומגבלות:</p>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header"><div class="code-filename"><span class="dr"></span><span class="dy"></span><span class="dg"></span>&nbsp; SQL — הגדרת עמודות</div></div>
+    <div class="code-body"><pre>        (
+<span class="hl-line">            username <span class="sql-ty">TEXT</span>    <span class="sql-con">PRIMARY KEY  NOT NULL</span>,</span>
+<span class="hl-blue">            password <span class="sql-ty">TEXT</span>                  <span class="sql-con">NOT NULL</span>,</span>
+<span class="hl-blue">            email    <span class="sql-ty">TEXT</span>                  <span class="sql-con">NOT NULL</span>,</span>
+<span class="hl-green">            phone    <span class="sql-ty">TEXT</span></span>
+        )</pre></div>
+  </div>
+
+  <div class="card">
+    <h3>🔧 מבנה הגדרת עמודה</h3>
+    <div class="code-block">
+      <div class="code-body"><pre>   <span class="hl">שם_עמודה</span>    <span class="hl2">סוג_נתון</span>   <span class="hlg">מגבלות</span>
+   ─────────    ─────────   ────────────────────────
+   username     TEXT        PRIMARY KEY  NOT NULL
+   password     TEXT        NOT NULL
+   email        TEXT        NOT NULL
+   phone        TEXT        (ללא מגבלות — אופציונלי)</pre></div>
+    </div>
+
+    <h3>🔢 סוגי נתונים ב-SQLite</h3>
+    <div class="annotated-line">
+      <code>TEXT</code>
+      <div class="desc">טקסט — מחרוזת באורך חופשי. השדה הנפוץ ביותר. מתאים לשמות, סיסמאות, אימייל, מספרי טלפון.</div>
+    </div>
+    <div class="annotated-line blue">
+      <code>INTEGER</code>
+      <div class="desc">מספר שלם — לא בשימוש בפרויקט שלנו, אבל נפוץ למזהים (ID) ולספירות.</div>
+    </div>
+    <div class="annotated-line green">
+      <code>REAL</code>
+      <div class="desc">מספר עשרוני — לא בשימוש כאן. מתאים למחירים, ציונים.</div>
+    </div>
+
+    <div class="callout warn">
+      <span class="icon">💡</span>
+      <div class="body"><strong>מספר טלפון כ-TEXT ולא כ-INTEGER?</strong> מכיוון שמספרי טלפון מתחילים ב-0 (כמו 050-...) ועשויים להכיל מקפים — TEXT שומר אותם בדיוק כפי שהוזנו.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 6 ══════════════════════ -->
+<div class="slide" id="slide-6">
+  <div class="card purple">
+    <h2>🔒 מגבלות שדות — Constraints</h2>
+    <p>מגבלות קובעות אילו ערכים מותרים בכל עמודה. בפרויקט שלנו יש שלוש מגבלות:</p>
+  </div>
+
+  <div class="annotated-line">
+    <code>NOT NULL</code>
+    <div class="desc"><strong>שדה חובה</strong> — SQLite לא יאפשר להכניס שורה בלי ערך בשדה הזה. username, password ו-email הם NOT NULL — חייבים להיות ממולאים.</div>
+  </div>
+  <div class="annotated-line blue">
+    <code>PRIMARY KEY</code>
+    <div class="desc"><strong>מזהה ייחודי</strong> — ערך זה חייב להיות ייחודי בכל הטבלה. אי אפשר שיהיו שני משתמשים עם אותו username. גם כולל NOT NULL אוטומטית.</div>
+  </div>
+  <div class="annotated-line green">
+    <code>(ללא מגבלה)</code>
+    <div class="desc"><strong>שדה אופציונלי</strong> — phone ללא מגבלות. ניתן להכניס שורה בלי טלפון. הערך יהיה NULL (=ריק) ב-DB.</div>
+  </div>
+
+  <div class="card">
+    <h3>📊 ויזואליזציה — ניסיון כניסת שורה כפולה</h3>
+    <div class="db-visual">
+      <div class="db-visual-header">
+        <span>🗃️</span>
+        <span class="db-name">users</span>
+      </div>
+      <table class="db-inner">
+        <tr>
+          <th>username <span style="color:var(--success);font-size:0.65rem;">PK</span></th>
+          <th>password <span style="color:var(--warn);font-size:0.65rem;">NN</span></th>
+          <th>email <span style="color:var(--warn);font-size:0.65rem;">NN</span></th>
+          <th>phone</th>
+        </tr>
+        <tr>
+          <td class="col-pk">alice</td>
+          <td style="color:#c3e88d;">pass123!</td>
+          <td style="color:#c3e88d;">alice@school.ac.il</td>
+          <td style="color:#c3e88d;">050-1234567</td>
+        </tr>
+        <tr>
+          <td class="col-pk">bob42</td>
+          <td style="color:#c3e88d;">b0b$ecure</td>
+          <td style="color:#c3e88d;">bob@email.com</td>
+          <td style="color:var(--text-muted);">NULL</td>
+        </tr>
+        <tr style="opacity:0.5;">
+          <td style="color:var(--danger);text-decoration:line-through;font-family:'Fira Code',monospace;font-size:0.8rem;">alice</td>
+          <td style="color:var(--danger);">newpass</td>
+          <td style="color:var(--danger);">alice2@x.com</td>
+          <td style="color:var(--danger);">—</td>
+        </tr>
+      </table>
+    </div>
+    <p style="font-size:0.82rem;text-align:center;color:var(--danger);font-family:'Fira Code',monospace;margin-top:0.4rem;">↑ שורה שלישית נדחית — alice כבר קיים כ-PRIMARY KEY</p>
+
+    <h3>📋 השוואת ארבעת השדות</h3>
+    <div class="db-visual">
+      <div class="db-visual-header"><span class="db-name">הגדרת עמודות — סיכום</span></div>
+      <table class="db-inner">
+        <tr><th>שדה</th><th>סוג</th><th>PRIMARY KEY</th><th>NOT NULL</th><th>יכול להיות ריק?</th></tr>
+        <tr>
+          <td class="col-pk">username</td>
+          <td><span class="pill-badge pb-text">TEXT</span></td>
+          <td><span class="pill-badge pb-pk">✓ כן</span></td>
+          <td><span class="pill-badge pb-nn">✓ כן</span></td>
+          <td><span class="pill-badge pb-no">לא</span></td>
+        </tr>
+        <tr>
+          <td class="col-name">password</td>
+          <td><span class="pill-badge pb-text">TEXT</span></td>
+          <td><span class="pill-badge pb-opt">לא</span></td>
+          <td><span class="pill-badge pb-nn">✓ כן</span></td>
+          <td><span class="pill-badge pb-no">לא</span></td>
+        </tr>
+        <tr>
+          <td class="col-name">email</td>
+          <td><span class="pill-badge pb-text">TEXT</span></td>
+          <td><span class="pill-badge pb-opt">לא</span></td>
+          <td><span class="pill-badge pb-nn">✓ כן</span></td>
+          <td><span class="pill-badge pb-no">לא</span></td>
+        </tr>
+        <tr>
+          <td class="col-name">phone</td>
+          <td><span class="pill-badge pb-text">TEXT</span></td>
+          <td><span class="pill-badge pb-opt">לא</span></td>
+          <td><span class="pill-badge pb-opt">לא</span></td>
+          <td><span class="pill-badge pb-yes">כן (NULL)</span></td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>💾 commit() ו-close() — סיום נכון</h3>
+    <div class="code-block">
+      <div class="code-body"><pre><span class="hl-green">    conn.<span class="fn">commit</span>()   </span><span class="comment">← שומר שינויים מהזיכרון לקובץ הדיסק</span>
+<span class="hl-green">    conn.<span class="fn">close</span>()    </span><span class="comment">← שחרור החיבור — חובה לאחר הסיום</span></pre></div>
+    </div>
+    <div class="annotated-line green">
+      <code>conn.commit()</code>
+      <div class="desc"><strong>שומר לדיסק.</strong> בלי commit, ה-CREATE TABLE קיים רק בזיכרון ויאבד. אחרי commit — הטבלה כתובה בקובץ users.db.</div>
+    </div>
+    <div class="annotated-line green">
+      <code>conn.close()</code>
+      <div class="desc"><strong>סוגר חיבור.</strong> משחרר את הקובץ. תמיד לסגור בסוף — לא לפני commit!</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 7 ══════════════════════ -->
+<div class="slide" id="slide-7">
+  <div class="card purple">
+    <h2>🧩 בדקו את עצמכם!</h2>
+  </div>
+
+  <div class="card" id="q1-card">
+    <div class="quiz-q">שאלה 1 — מה קורה כש-<ic>sqlite3.connect('users.db')</ic> רץ בפעם הראשונה, וקובץ users.db עדיין לא קיים?</div>
+    <div class="quiz-options">
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q1')">Python זורקת שגיאת FileNotFoundError</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,true,'q1')">SQLite יוצר אוטומטית קובץ ריק בשם users.db בתיקיית הפרויקט ופותח אותו</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q1')">צריך ליצור את הקובץ ידנית לפני הרצת הקוד</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q1')">נוצרת טבלה ריקה אוטומטית בשם users</div>
+    </div>
+    <div class="quiz-feedback" id="q1-fb"></div>
+  </div>
+
+  <div class="card" id="q2-card">
+    <div class="quiz-q">שאלה 2 — מדוע כתוב <ic>CREATE TABLE IF NOT EXISTS</ic> ולא פשוט <ic>CREATE TABLE</ic>?</div>
+    <div class="quiz-options">
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q2')">כי IF NOT EXISTS מהיר יותר</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q2')">כי בלעדיו Python לא מבינה את הפקודה</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,true,'q2')">כי create_table() נקראת בכל הפעלת שרת — בלי IF NOT EXISTS תתקבל שגיאה בפעם השנייה כי הטבלה כבר קיימת</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q2')">כי IF NOT EXISTS יוצר את הטבלה מהר יותר</div>
+    </div>
+    <div class="quiz-feedback" id="q2-fb"></div>
+  </div>
+
+  <div class="card" id="q3-card">
+    <div class="quiz-q">שאלה 3 — שדה phone מוגדר כ-<ic>TEXT</ic> ללא <ic>NOT NULL</ic>. מה זה אומר?</div>
+    <div class="quiz-options">
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q3')">חובה למלא טלפון — אחרת SQLite יזרוק שגיאה</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,true,'q3')">שדה אופציונלי — ניתן להכניס שורה חדשה בלי טלפון, הערך יהיה NULL</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q3')">SQLite יכניס אוטומטית "0" כברירת מחדל</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q3')">השדה לא ייכלל בטבלה כלל</div>
+    </div>
+    <div class="quiz-feedback" id="q3-fb"></div>
+  </div>
+
+  <div class="card" id="q4-card">
+    <div class="quiz-q">שאלה 4 — למה שדה username מוגדר כ-<ic>PRIMARY KEY</ic>?</div>
+    <div class="quiz-options">
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q4')">כי זה השדה הראשון בטבלה</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q4')">כדי שה-SQL ידע לאתחל אותו לריק</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,true,'q4')">כדי להבטיח שכל username ייחודי — לא ייתכנו שני משתמשים עם אותו שם. SQLite יסרב להכניס כפילות</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q4')">כי TEXT חייב PRIMARY KEY</div>
+    </div>
+    <div class="quiz-feedback" id="q4-fb"></div>
+  </div>
+
+  <div class="card" id="q5-card">
+    <div class="quiz-q">שאלה 5 — מה יקרה אם נשכח לקרוא <ic>conn.commit()</ic> אחרי CREATE TABLE?</div>
+    <div class="quiz-options">
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q5')">הטבלה תיווצר בכל מקרה — commit לא נדרש ל-CREATE TABLE</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q5')">תתקבל שגיאה מיידית</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,true,'q5')">הטבלה תיווצר בזיכרון בלבד — לאחר conn.close() השינוי לא יישמר בקובץ users.db</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q5')">Python תבצע commit אוטומטי בסגירת הקובץ</div>
+    </div>
+    <div class="quiz-feedback" id="q5-fb"></div>
+  </div>
+
+  <div class="card success-card">
+    <h2>🏁 סיכום הלומדה</h2>
+    <ul class="checklist">
+      <li><strong>SQLite</strong> — מסד נתונים בקובץ יחיד, מובנה ב-Python, ללא התקנה</li>
+      <li><ic>sqlite3.connect('users.db')</ic> — פותח או יוצר את הקובץ</li>
+      <li><ic>conn.cursor()</ic> — יוצר "עט" לשליחת שאילתות SQL</li>
+      <li><ic>CREATE TABLE IF NOT EXISTS users (...)</ic> — יוצר טבלה רק אם לא קיימת</li>
+      <li><strong>4 עמודות:</strong> username (PK+NN), password (NN), email (NN), phone (אופציונלי)</li>
+      <li><ic>TEXT</ic> — סוג הנתון לכל השדות בפרויקט</li>
+      <li><ic>PRIMARY KEY</ic> — ייחודיות. <ic>NOT NULL</ic> — חובה למלא</li>
+      <li><ic>conn.commit()</ic> ← שמירה. <ic>conn.close()</ic> ← סגירה</li>
+      <li><ic>create_table()</ic> נקראת מיד בטעינת main.py — לפני כל route</li>
+    </ul>
+  </div>
+
+  <div class="card sky">
+    <h2>🚀 משימת המשך</h2>
+    <p>פותחים את הפרויקט ומנסים:</p>
+    <br>
+    <p><strong>1.</strong> מוסיפים לטבלה עמודה חדשה: <ic>created_at TEXT DEFAULT CURRENT_TIMESTAMP</ic> — תאריך ההרשמה. שימו לב: צריך למחוק את users.db ולהריץ מחדש כדי שהשינוי יכנס לתוקף</p>
+    <p><strong>2.</strong> מורידים את הכלי <strong>DB Browser for SQLite</strong> (חינמי) ופותחים בו את users.db — ניתן לראות את מבנה הטבלה בממשק גרפי</p>
+    <p><strong>3.</strong> <strong>חשיבה:</strong> מדוע לא הגדרנו עמודת <ic>id INTEGER PRIMARY KEY</ic> כמו בדרך כלל? מה היתרון והחסרון של username כ-PRIMARY KEY?</p>
+  </div>
+</div>
+
+<!-- Navigation -->
+<div class="btn-row">
+  <button class="btn btn-secondary" id="prevBtn" disabled>← הקודם</button>
+  <span class="slide-num" id="slideNum">שלב 1 מתוך 7</span>
+  <button class="btn btn-primary" id="nextBtn">הבא ←</button>
+</div>
+</div>
+
+<script>
+const TOTAL = 7;
+let current = 1;
+const quizAnswered = {};
+
+const feedbacks = {
+  q1: {
+    correct: '✓ נכון! connect() יוצר את הקובץ אוטומטית אם לא קיים. כל הפעולות יתבצעו בקובץ החדש הריק — עד שנוסיף טבלאות ונתונים.',
+    wrong:   '✗ לא מדויק. sqlite3.connect() אף פעם לא זורק שגיאה על קובץ חסר — הוא פשוט יוצר קובץ DB ריק חדש.'
+  },
+  q2: {
+    correct: '✓ בדיוק! create_table() נקראת בכל פעם שמריצים את main.py. IF NOT EXISTS מבטיח שהפקודה לא תיכשל בהרצה שנייה כשהטבלה כבר קיימת.',
+    wrong:   '✗ לא מדויק. בלי IF NOT EXISTS — בהרצה שנייה SQLite יזרוק: "OperationalError: table users already exists". IF NOT EXISTS חוסך את השגיאה.'
+  },
+  q3: {
+    correct: '✓ נכון! ללא NOT NULL — השדה אופציונלי. אפשר לרשום משתמש בלי טלפון, וה-DB יכניס NULL באותה תא.',
+    wrong:   '✗ לא מדויק. NOT NULL הוא זה שמחייב מילוי. בלעדיו — SQLite מאפשר ערך ריק (NULL). זה בדיוק מה שרוצים עבור phone האופציונלי.'
+  },
+  q4: {
+    correct: '✓ מצוין! PRIMARY KEY מבטיח ייחודיות — לא ייתכנו שתי רשומות עם אותו username. ניסיון כזה יגרום לשגיאת IntegrityError.',
+    wrong:   '✗ לא מדויק. PRIMARY KEY = ייחודיות מובטחת. SQLite שומר אינדקס מיוחד שמבטיח שאף שתי שורות לא יהיו עם אותו ערך בשדה זה.'
+  },
+  q5: {
+    correct: '✓ נכון! commit() הוא זה שכותב מהזיכרון לדיסק. בלעדיו — השינוי קיים רק בסשן הנוכחי ויאבד ב-close(). תמיד יש לקרוא commit() לפני close().',
+    wrong:   '✗ לא מדויק. commit() חיוני לשמירה לדיסק. SQLite לא מבצע commit אוטומטי. תמיד יש לקרוא commit() לפני close().'
+  }
+};
+
+function initDots() {
+  const c = document.getElementById('navDots');
+  for (let i = 1; i <= TOTAL; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 1 ? ' active' : '');
+    d.id = 'dot-' + i;
+    c.appendChild(d);
+    d.addEventListener('click', (function(n){ return function(){ goTo(n); }; })(i));
+  }
+}
+
+function goTo(n) {
+  document.getElementById('slide-' + current).classList.remove('active');
+  document.getElementById('dot-' + current).classList.remove('active');
+  if (current < n) document.getElementById('dot-' + current).classList.add('completed');
+  current = n;
+  document.getElementById('slide-' + current).classList.add('active');
+  document.getElementById('dot-' + current).classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  updateUI();
+}
+
+function changeSlide(dir) {
+  const next = current + dir;
+  if (next < 1 || next > TOTAL) return;
+  goTo(next);
+}
+
+function updateUI() {
+  document.getElementById('prevBtn').disabled = current === 1;
+  document.getElementById('nextBtn').textContent = current === TOTAL ? '✓ סיום' : 'הבא ←';
+  document.getElementById('slideNum').textContent = 'שלב ' + current + ' מתוך ' + TOTAL;
+  const pct = ((current - 1) / (TOTAL - 1)) * 100;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressText').textContent = 'שלב ' + current + ' מתוך ' + TOTAL;
+}
+
+function checkQuiz(el, isCorrect, qid) {
+  if (quizAnswered[qid]) return;
+  quizAnswered[qid] = true;
+  el.classList.add(isCorrect ? 'correct' : 'wrong');
+  const fb = document.getElementById(qid + '-fb');
+  fb.classList.add('show', isCorrect ? 'correct' : 'wrong');
+  fb.textContent = isCorrect ? feedbacks[qid].correct : feedbacks[qid].wrong;
+  if (!isCorrect) {
+    el.parentElement.querySelectorAll('.quiz-opt').forEach(function(opt) {
+      if (opt.getAttribute('onclick') && opt.getAttribute('onclick').includes('true')) opt.classList.add('correct');
+    });
+  }
+  document.querySelectorAll('#' + qid + '-card .quiz-opt').forEach(function(o) { o.classList.add('locked'); });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  initDots();
+  updateUI();
+  document.getElementById('prevBtn').addEventListener('click', function() { changeSlide(-1); });
+  document.getElementById('nextBtn').addEventListener('click', function() { changeSlide(1); });
+});
+</script>
+</body>
+</html>

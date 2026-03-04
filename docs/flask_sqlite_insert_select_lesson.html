@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>לומדה: INSERT ו-SELECT</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;600;700;900&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0e0f14;--surface:#15171f;--surface2:#1d2030;
+    --accent:#a78bfa;--accent2:#38bdf8;--success:#4ade80;
+    --danger:#f87171;--warn:#fb923c;--text:#e2e8f0;
+    --text-muted:#64748b;--border:#232640;--code-bg:#090a0f;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);line-height:1.7;min-height:100vh;}
+  .hero{background:linear-gradient(160deg,#130f20 0%,#0e0f14 60%);border-bottom:1px solid var(--border);padding:3rem 2rem 2.5rem;text-align:center;position:relative;overflow:hidden;}
+  .hero::before{content:'';position:absolute;top:-40%;left:50%;transform:translateX(-50%);width:700px;height:400px;background:radial-gradient(ellipse,rgba(167,139,250,0.08) 0%,transparent 70%);pointer-events:none;}
+  .badge{display:inline-block;background:rgba(167,139,250,0.12);color:var(--accent);border:1px solid rgba(167,139,250,0.35);border-radius:999px;padding:.3rem 1.1rem;font-size:.8rem;font-weight:600;letter-spacing:.05em;margin-bottom:1rem;}
+  .hero h1{font-size:clamp(2rem,5vw,3rem);font-weight:900;line-height:1.2;margin-bottom:1rem;}
+  .hero h1 span{color:var(--accent);}
+  .hero p{color:var(--text-muted);font-size:1.05rem;max-width:540px;margin:0 auto;}
+  .progress-container{background:var(--surface);border-bottom:1px solid var(--border);padding:1rem 2rem;display:flex;align-items:center;gap:1rem;position:sticky;top:0;z-index:100;}
+  .progress-bar{flex:1;height:5px;background:var(--border);border-radius:999px;overflow:hidden;}
+  .progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:999px;transition:width .5s ease;width:0%;}
+  .progress-text{font-size:.82rem;color:var(--text-muted);white-space:nowrap;}
+  .nav-dots{display:flex;justify-content:center;gap:.5rem;padding:1.2rem;flex-wrap:wrap;}
+  .dot{width:11px;height:11px;border-radius:50%;background:var(--border);cursor:pointer;transition:all .3s;}
+  .dot.active{background:var(--accent);transform:scale(1.35);}
+  .dot.completed{background:var(--accent2);}
+  .container{max-width:880px;margin:0 auto;padding:0 1.5rem;}
+  .slide{display:none;animation:fadeIn .35s ease;}
+  .slide.active{display:block;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:2rem;margin-bottom:1.5rem;}
+  .card.purple{border-color:rgba(167,139,250,.4);background:linear-gradient(135deg,rgba(167,139,250,.05) 0%,var(--surface) 100%);}
+  .card.sky{border-color:rgba(56,189,248,.4);background:linear-gradient(135deg,rgba(56,189,248,.05) 0%,var(--surface) 100%);}
+  .card.success-card{border-color:rgba(74,222,128,.35);background:rgba(74,222,128,.04);}
+  .card h2{font-size:1.4rem;font-weight:700;margin-bottom:1rem;display:flex;align-items:center;gap:.6rem;}
+  .card h3{font-size:1.05rem;font-weight:600;margin:1.2rem 0 .6rem;color:var(--accent2);}
+  .card p{color:#94a3b8;margin-bottom:.7rem;}
+  .code-block{background:var(--code-bg);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin:1rem 0;font-family:'Fira Code',monospace;}
+  .code-header{background:var(--surface2);padding:.55rem 1rem;display:flex;align-items:center;border-bottom:1px solid var(--border);}
+  .code-filename{font-size:.78rem;color:var(--text-muted);display:flex;align-items:center;gap:.5rem;}
+  .dr{width:9px;height:9px;border-radius:50%;background:#ff5f57;display:inline-block;}
+  .dy{width:9px;height:9px;border-radius:50%;background:#febc2e;display:inline-block;}
+  .dg{width:9px;height:9px;border-radius:50%;background:#28c840;display:inline-block;}
+  .code-body{padding:1.1rem 1.3rem;overflow-x:auto;font-size:.83rem;line-height:1.9;direction:ltr;text-align:left;}
+  .code-body pre{white-space:pre;}
+  .kw{color:#c792ea;}.fn{color:#82aaff;}.str{color:#c3e88d;}.comment{color:#546e7a;font-style:italic;}
+  .py-imp{color:#a78bfa;}.sql-kw{color:#38bdf8;font-weight:600;}.sql-con{color:#4ade80;font-weight:600;}
+  .jinja{color:#ffcb6b;font-weight:600;}.jinja-v{color:#ff9cac;}.tag{color:#89ddff;}.attr{color:#c3e88d;}
+  .hl-line{background:rgba(167,139,250,.10);display:block;margin:0 -1.3rem;padding:0 1.3rem;border-right:3px solid var(--accent);}
+  .hl-blue{background:rgba(56,189,248,.08);display:block;margin:0 -1.3rem;padding:0 1.3rem;border-right:3px solid var(--accent2);}
+  .hl-green{background:rgba(74,222,128,.08);display:block;margin:0 -1.3rem;padding:0 1.3rem;border-right:3px solid var(--success);}
+  .hl-warn{background:rgba(251,146,60,.08);display:block;margin:0 -1.3rem;padding:0 1.3rem;border-right:3px solid var(--warn);}
+  .hl-red{background:rgba(248,113,113,.08);display:block;margin:0 -1.3rem;padding:0 1.3rem;border-right:3px solid var(--danger);}
+  .annotated-line{display:flex;align-items:flex-start;gap:.8rem;margin:.6rem 0;padding:.7rem .9rem;background:var(--surface2);border-radius:8px;border-right:3px solid var(--accent);font-size:.9rem;}
+  .annotated-line.blue{border-color:var(--accent2);}.annotated-line.green{border-color:var(--success);}
+  .annotated-line.red{border-color:var(--danger);}.annotated-line.warn{border-color:var(--warn);}
+  .annotated-line code{font-family:'Fira Code',monospace;font-size:.81rem;background:var(--code-bg);padding:.15rem .5rem;border-radius:5px;color:var(--accent);white-space:nowrap;flex-shrink:0;}
+  .annotated-line.blue code{color:var(--accent2);}.annotated-line.green code{color:var(--success);}
+  .annotated-line.red code{color:var(--danger);}.annotated-line.warn code{color:var(--warn);}
+  .annotated-line .desc{color:#94a3b8;font-size:.88rem;}
+  .callout{padding:.85rem 1rem;border-radius:10px;margin:.9rem 0;font-size:.9rem;display:flex;gap:.7rem;align-items:flex-start;}
+  .callout.purple{background:rgba(167,139,250,.07);border:1px solid rgba(167,139,250,.25);}
+  .callout.blue{background:rgba(56,189,248,.07);border:1px solid rgba(56,189,248,.25);}
+  .callout.green{background:rgba(74,222,128,.07);border:1px solid rgba(74,222,128,.25);}
+  .callout.red{background:rgba(248,113,113,.07);border:1px solid rgba(248,113,113,.25);}
+  .callout.warn{background:rgba(251,146,60,.07);border:1px solid rgba(251,146,60,.25);}
+  .callout .icon{font-size:1.1rem;flex-shrink:0;margin-top:.05rem;}
+  .callout .body{color:#94a3b8;}.callout .body strong{color:var(--text);}
+  .before-after{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:1rem 0;}
+  .ba-label{font-size:.82rem;font-weight:700;margin-bottom:.5rem;padding:.35rem .8rem;border-radius:6px;display:inline-block;}
+  .ba-label.red{background:rgba(248,113,113,.15);color:var(--danger);}
+  .ba-label.green{background:rgba(74,222,128,.15);color:var(--success);}
+  .ba-label.purple{background:rgba(167,139,250,.15);color:var(--accent);}
+  .ba-label.blue{background:rgba(56,189,248,.15);color:var(--accent2);}
+  .db-visual{border-radius:10px;overflow:hidden;border:1px solid var(--border);margin:.9rem 0;}
+  .db-visual-header{background:var(--surface2);padding:.5rem 1rem;display:flex;align-items:center;gap:.6rem;border-bottom:1px solid var(--border);}
+  .db-name{font-family:'Fira Code',monospace;font-size:.82rem;color:var(--accent);font-weight:600;}
+  .db-inner{width:100%;border-collapse:collapse;background:var(--code-bg);}
+  .db-inner th{background:var(--surface2);padding:.55rem 1rem;text-align:right;font-family:'Fira Code',monospace;font-size:.73rem;color:var(--accent2);font-weight:700;letter-spacing:.05em;border-bottom:1px solid var(--border);}
+  .db-inner td{padding:.6rem 1rem;font-family:'Fira Code',monospace;font-size:.8rem;border-bottom:1px solid var(--border);color:var(--text-muted);vertical-align:middle;}
+  .db-inner tr:last-child td{border-bottom:none;}
+  .db-inner td.col-pk{color:var(--success);font-weight:600;}
+  .access-table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.88rem;}
+  .access-table th{background:var(--surface2);padding:.7rem 1rem;text-align:right;font-weight:600;color:var(--text-muted);font-size:.8rem;}
+  .access-table td{padding:.65rem 1rem;border-bottom:1px solid var(--border);color:#94a3b8;}
+  .access-table tr:last-child td{border-bottom:none;}
+  .access-table td:first-child{font-family:'Fira Code',monospace;font-size:.82rem;color:var(--accent2);}
+  .pill{display:inline-block;padding:.2rem .7rem;border-radius:999px;font-size:.75rem;font-weight:700;}
+  .pill.yes{background:rgba(74,222,128,.15);color:var(--success);}
+  .pill.no{background:rgba(248,113,113,.15);color:var(--danger);}
+  .pill.warn{background:rgba(251,146,60,.15);color:var(--warn);}
+  .checklist{list-style:none;}
+  .checklist li{padding:.55rem 0;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:.8rem;font-size:.93rem;color:#94a3b8;}
+  .checklist li::before{content:'✓';color:var(--accent);font-weight:700;flex-shrink:0;}
+  .quiz-q{font-size:1rem;font-weight:600;margin-bottom:.9rem;}
+  .quiz-options{display:flex;flex-direction:column;gap:.6rem;}
+  .quiz-opt{background:var(--surface2);border:2px solid var(--border);border-radius:10px;padding:.75rem 1.1rem;cursor:pointer;transition:all .2s;font-size:.93rem;direction:rtl;text-align:right;font-family:'Heebo',sans-serif;}
+  .quiz-opt:hover:not(.locked){border-color:var(--accent);background:rgba(167,139,250,.07);}
+  .quiz-opt.correct{border-color:var(--success);background:rgba(74,222,128,.09);color:var(--success);}
+  .quiz-opt.wrong{border-color:var(--danger);background:rgba(248,113,113,.09);color:var(--danger);}
+  .quiz-feedback{margin-top:.9rem;padding:.85rem;border-radius:10px;display:none;font-size:.9rem;}
+  .quiz-feedback.show{display:block;}
+  .quiz-feedback.correct{background:rgba(74,222,128,.09);border:1px solid rgba(74,222,128,.3);color:var(--success);}
+  .quiz-feedback.wrong{background:rgba(248,113,113,.09);border:1px solid rgba(248,113,113,.3);color:var(--danger);}
+  ic{font-family:'Fira Code',monospace;font-size:.86em;background:var(--surface2);padding:.1em .4em;border-radius:4px;color:var(--accent);}
+  .hl{color:var(--accent);font-weight:600;}.hl2{color:var(--accent2);font-weight:600;}
+  .hlg{color:var(--success);font-weight:600;}.hlr{color:var(--danger);font-weight:600;}.hlw{color:var(--warn);font-weight:600;}
+  .btn-row{display:flex;justify-content:space-between;align-items:center;padding:2rem 0 3rem;gap:1rem;}
+  .btn{padding:.75rem 1.8rem;border-radius:10px;border:none;cursor:pointer;font-size:.95rem;font-family:'Heebo',sans-serif;font-weight:600;transition:all .25s;display:flex;align-items:center;gap:.4rem;}
+  .btn-primary{background:var(--accent);color:#0e0f14;}
+  .btn-primary:hover{filter:brightness(1.1);transform:translateY(-2px);box-shadow:0 6px 20px rgba(167,139,250,.3);}
+  .btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
+  .btn-secondary:hover{background:var(--surface);}
+  .slide-num{color:var(--text-muted);font-size:.88rem;}
+  @media(max-width:640px){.before-after{grid-template-columns:1fr;}.btn-row{flex-direction:column;}.btn{width:100%;justify-content:center;}}
+</style>
+</head>
+<body>
+<div class="hero">
+  <div class="badge">🎓 לומדת Flask — תיכון מגידו</div>
+  <h1>INSERT ו-SELECT<br><span>הוספת רשומות ושליפתן</span></h1>
+  <p>לומדים כיצד מוסיפים משתמשים לטבלה (Signup), שולפים אותם (Login ו-Users), ומעבירים נתונים לתבנית Jinja2</p>
+</div>
+<div class="progress-container">
+  <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+  <div class="progress-text" id="progressText">שלב 1 מתוך 9</div>
+</div>
+<div class="nav-dots" id="navDots"></div>
+<div class="container">
+
+<!-- SLIDE 1 -->
+<div class="slide active" id="slide-1">
+  <div class="card purple">
+    <h2>🗺️ מה נלמד — תמונה כוללת</h2>
+    <p>בלומדה הקודמת יצרנו את מבנה הטבלה. עכשיו נלמד לכתוב ולקרוא ממנה. שלושה routes בפרויקט עובדים עם הטבלה:</p>
+  </div>
+  <table class="access-table">
+    <tr><th>Route</th><th>פעולה ב-DB</th><th>SQL</th><th>מה קורה?</th></tr>
+    <tr><td>/signup</td><td><span class="pill yes">כתיבה</span></td><td><ic>INSERT INTO</ic></td><td>מוסיף משתמש חדש לטבלה</td></tr>
+    <tr><td>/login</td><td><span class="pill warn">קריאה</span></td><td><ic>SELECT + fetchone()</ic></td><td>מחפש משתמש בודד לפי username</td></tr>
+    <tr><td>/users</td><td><span class="pill warn">קריאה</span></td><td><ic>SELECT * + fetchall()</ic></td><td>שולף את כל המשתמשים ומציג בטבלה</td></tr>
+  </table>
+  <div class="card sky">
+    <h3>💡 מה נלמד בלומדה זו?</h3>
+    <ul class="checklist">
+      <li>פקודת <ic>INSERT INTO</ic> — הוספת שורה חדשה לטבלה</li>
+      <li>בדיקת כפילות לפני הוספה עם <ic>SELECT + fetchone()</ic></li>
+      <li>שאילתות עם פרמטרים (<ic>?</ic>) ומדוע הן חשובות</li>
+      <li>שליפת שורה בודדת עם <ic>fetchone()</ic> — עבור login</li>
+      <li>שליפת כל השורות עם <ic>fetchall()</ic> — עבור users page</li>
+      <li>העברת נתונים מה-DB ל-Jinja2 וגישה ב-<ic>user[0]</ic>, <ic>user[1]</ic>...</li>
+    </ul>
+  </div>
+</div>
+
+<!-- SLIDE 2 — TUPLES -->
+<div class="slide" id="slide-2">
+  <div class="card purple">
+    <h2>📦 מה זה Tuple?</h2>
+    <p>SQLite מחזיר נתונים בצורה של <strong>tuple</strong> — אחד מסוגי הנתונים הבסיסיים ב-Python. חשוב להכיר אותו לפני שנמשיך:</p>
+  </div>
+
+  <div class="card">
+    <h3>🔑 הגדרה</h3>
+    <p>Tuple הוא <strong>רצף סדור ובלתי ניתן לשינוי</strong> של ערכים. נכתב עם סוגריים עגולים <ic>()</ic>, האיברים מופרדים בפסיקים:</p>
+    <div class="code-block">
+      <div class="code-body"><pre><span class="comment"># tuple של משתמש מהDB:</span>
+user = (<span class="str">"alice"</span>, <span class="str">"pass123"</span>, <span class="str">"alice@school.ac.il"</span>, <span class="str">"050-111"</span>)
+
+<span class="comment"># גישה לפי אינדקס — בדיוק כמו list:</span>
+user[<span class="str">0</span>]  <span class="comment">→ "alice"</span>
+user[<span class="str">1</span>]  <span class="comment">→ "pass123"</span>
+user[<span class="str">2</span>]  <span class="comment">→ "alice@school.ac.il"</span>
+user[<span class="str">3</span>]  <span class="comment">→ "050-111"</span></pre></div>
+    </div>
+  </div>
+
+  <div class="before-after">
+    <div>
+      <div class="ba-label purple">Tuple ()</div>
+      <div class="code-block">
+        <div class="code-body"><pre>user = (<span class="str">"alice"</span>, <span class="str">"pass"</span>, <span class="str">"a@b.com"</span>)
+
+<span class="comment"># קריאה — מותר ✓</span>
+<span class="kw">print</span>(user[<span class="str">0</span>])  <span class="comment">→ "alice"</span>
+
+<span class="comment"># שינוי — אסור! ✗</span>
+user[<span class="str">0</span>] = <span class="str">"bob"</span>
+<span class="comment">→ TypeError: 'tuple' object</span>
+<span class="comment">   does not support item</span>
+<span class="comment">   assignment</span></pre></div>
+      </div>
+    </div>
+    <div>
+      <div class="ba-label blue">List []</div>
+      <div class="code-block">
+        <div class="code-body"><pre>users = [<span class="str">"alice"</span>, <span class="str">"bob"</span>, <span class="str">"carol"</span>]
+
+<span class="comment"># קריאה — מותר ✓</span>
+<span class="kw">print</span>(users[<span class="str">0</span>])  <span class="comment">→ "alice"</span>
+
+<span class="comment"># שינוי — מותר ✓</span>
+users[<span class="str">0</span>] = <span class="str">"dave"</span>
+<span class="comment">→ עובד בלי בעיה</span>
+
+
+
+
+</pre></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>🗃️ למה SQLite מחזיר tuple ולא list?</h3>
+    <p>שורת DB היא <strong>קבועה</strong> — לא אמורים לשנות אותה ישירות בתוצאה. tuple מתאים כי הוא מייצג נתון קריאה-בלבד.</p>
+    <div class="annotated-line">
+      <code>fetchone()</code>
+      <div class="desc">מחזיר tuple אחד, כמו: <ic>("alice", "pass123", "alice@school.ac.il", "050-111")</ic> — או <ic>None</ic> אם לא נמצא דבר.</div>
+    </div>
+    <div class="annotated-line blue">
+      <code>fetchall()</code>
+      <div class="desc">מחזיר <strong>list של tuples</strong>: <ic>[("alice", ...), ("bob", ...), ...]</ic> — רשימה שאפשר לעבור עליה בלולאה.</div>
+    </div>
+
+    <div class="db-visual">
+      <div class="db-visual-header"><span>📦</span><span class="db-name">tuple vs list — השוואה</span></div>
+      <table class="db-inner">
+        <tr><th>תכונה</th><th>Tuple ()</th><th>List []</th></tr>
+        <tr>
+          <td>יצירה</td>
+          <td style="color:#c3e88d;font-family:'Fira Code',monospace;font-size:.8rem;">("a", "b", "c")</td>
+          <td style="color:#c3e88d;font-family:'Fira Code',monospace;font-size:.8rem;">["a", "b", "c"]</td>
+        </tr>
+        <tr>
+          <td>גישה לפי אינדקס</td>
+          <td><span class="pill yes">✓ כן</span></td>
+          <td><span class="pill yes">✓ כן</span></td>
+        </tr>
+        <tr>
+          <td>שינוי ערך</td>
+          <td><span class="pill no">✗ לא</span></td>
+          <td><span class="pill yes">✓ כן</span></td>
+        </tr>
+        <tr>
+          <td>הוספת איברים</td>
+          <td><span class="pill no">✗ לא</span></td>
+          <td><span class="pill yes">✓ כן</span></td>
+        </tr>
+        <tr>
+          <td>מה SQLite מחזיר?</td>
+          <td><span class="pill yes">✓ שורה = tuple</span></td>
+          <td><span class="pill warn">רשימה = list של tuples</span></td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="callout purple">
+      <span class="icon">💡</span>
+      <div class="body"><strong>בקיצור:</strong> tuple = list שלא אפשר לשנות. ב-DB שלנו — כל שורה = tuple. <ic>user[0]</ic> = username, <ic>user[1]</ic> = password, לפי סדר העמודות שהגדרנו ב-CREATE TABLE.</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 3 (was 2) -->
+<div class="slide" id="slide-3">
+  <div class="card purple">
+    <h2>✍️ INSERT INTO — הוספת משתמש חדש</h2>
+    <p>פונקציית <ic>insert_user()</ic> מוסיפה רשומה חדשה לטבלה. היא נקראת מתוך route ה-signup כשמשתמש נרשם:</p>
+  </div>
+  <div class="code-block">
+    <div class="code-header"><div class="code-filename"><span class="dr"></span><span class="dy"></span><span class="dg"></span>&nbsp; main.py — insert_user()</div></div>
+    <div class="code-body"><pre><span class="kw">def</span> <span class="fn">insert_user</span>(username, password, email, phone):
+    conn = sqlite3.<span class="fn">connect</span>(<span class="str">'users.db'</span>)
+    c = conn.<span class="fn">cursor</span>()
+
+<span class="hl-line">    <span class="comment"># שלב א׳: בדיקה — האם username כבר קיים?</span></span>
+<span class="hl-line">    c.<span class="fn">execute</span>(<span class="str">"SELECT * FROM users WHERE username = ?"</span>, (username,))</span>
+<span class="hl-line">    existing = c.<span class="fn">fetchone</span>()</span>
+<span class="hl-line">    <span class="kw">if</span> existing:
+        conn.<span class="fn">close</span>()
+        <span class="kw">return</span> <span class="kw">False</span>           <span class="comment">← משתמש כבר קיים</span></span>
+
+<span class="hl-blue">    <span class="comment"># שלב ב׳: הוספה — username חדש</span></span>
+<span class="hl-blue">    c.<span class="fn">execute</span>(<span class="str">"INSERT INTO users VALUES (?, ?, ?, ?)"</span>,</span>
+<span class="hl-blue">             (username, password, email, phone))</span>
+    conn.<span class="fn">commit</span>()
+    conn.<span class="fn">close</span>()
+<span class="hl-green">    <span class="kw">return</span> <span class="kw">True</span>               <span class="comment">← הצלחה</span></span></pre></div>
+  </div>
+  <div class="card">
+    <h3>🔍 ניתוח: שני שלבים לפני INSERT</h3>
+    <div class="annotated-line">
+      <code>SELECT ... WHERE username = ?</code>
+      <div class="desc"><strong>בדיקה ראשונה:</strong> לפני שמוסיפים — בודקים אם username זה כבר קיים. PRIMARY KEY היה זורק Exception; כך אנחנו שולטים בתגובה.</div>
+    </div>
+    <div class="annotated-line blue">
+      <code>fetchone()</code>
+      <div class="desc">מחזיר <strong>tuple</strong> אם מצא תוצאה, או <strong>None</strong> אם לא. אם קיבלנו תוצאה — username תפוס, נחזיר False.</div>
+    </div>
+    <div class="annotated-line blue">
+      <code>INSERT INTO users VALUES (?, ?, ?, ?)</code>
+      <div class="desc">ארבעה <ic>?</ic> = ארבעה ערכים לפי סדר העמודות: username, password, email, phone. SQLite ממלא אותם מה-tuple.</div>
+    </div>
+    <div class="annotated-line green">
+      <code>commit() → return True</code>
+      <div class="desc">שומרים לדיסק ומחזירים True. ה-route יוכל להציג הודעת הצלחה ולהפנות לדף login.</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 4 (was 3) -->
+<div class="slide" id="slide-4">
+  <div class="card purple">
+    <h2>🛡️ שאילתות עם פרמטרים — למה <ic>?</ic>?</h2>
+    <p>שימו לב לסימן <ic>?</ic> בשאילתות. זה אחד הנושאים החשובים ביותר בעבודה עם DB:</p>
+  </div>
+  <div class="before-after">
+    <div>
+      <div class="ba-label red">❌ שרשור מחרוזות — מסוכן!</div>
+      <div class="code-block">
+        <div class="code-body"><pre><span class="comment"># נראה הגיוני...</span>
+query = <span class="str">"SELECT * FROM users "</span> \
+      + <span class="str">"WHERE username = '"</span> \
+      + username + <span class="str">"'"</span>
+
+<span class="comment"># אם username = "' OR '1'='1"</span>
+<span class="comment"># השאילתה הופכת ל:</span>
+<span class="comment"># WHERE username = ''</span>
+<span class="comment">#    OR '1'='1'</span>
+<span class="comment"># ← מחזיר את כל המשתמשים!</span></pre></div>
+      </div>
+    </div>
+    <div>
+      <div class="ba-label green">✅ Parameterized — בטוח</div>
+      <div class="code-block">
+        <div class="code-body"><pre><span class="comment"># ? = placeholder</span>
+c.<span class="fn">execute</span>(
+  <span class="str">"SELECT * FROM users "</span>
+  <span class="str">"WHERE username = ?"</span>,
+  (username,)   <span class="comment">← tuple!</span>
+)
+<span class="comment"># SQLite מטפל בערך בבטחה</span>
+<span class="comment"># גם עם תווים מיוחדים</span>
+<span class="comment"># ← מוגן מ-SQL Injection</span></pre></div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>⚠️ למה (username,) עם פסיק?</h3>
+    <p>הפרמטר השני של execute חייב להיות <strong>tuple</strong>. Python מבחינה בין ביטויים בסוגריים ל-tuple:</p>
+    <div class="code-block">
+      <div class="code-body"><pre>(username)    <span class="comment">← ביטוי בסוגריים — לא tuple!</span>
+(username,)   <span class="comment">← tuple עם איבר אחד — נכון ✓</span>
+
+(username, password)  <span class="comment">← tuple של שניים — בסדר ✓</span></pre></div>
+    </div>
+    <div class="callout warn">
+      <span class="icon">⚠️</span>
+      <div class="body"><strong>SQL Injection</strong> הוא אחד מסוגי ההתקפות הנפוצים על אתרים. שאילתות עם <ic>?</ic> מגינות עלינו ממנו אוטומטית — SQLite מטפל בתווים מיוחדים לפני הרצת השאילתה.</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 9 -->
+<div class="slide" id="slide-5">
+  <div class="card purple">
+    <h2>📝 route ה-Signup — כל הזרימה</h2>
+    <p>ה-route מקבל נתונים מהטופס, קורא ל-<ic>insert_user()</ic>, ומגיב בהתאם:</p>
+  </div>
+  <div class="code-block">
+    <div class="code-header"><div class="code-filename"><span class="dr"></span><span class="dy"></span><span class="dg"></span>&nbsp; main.py — @app.route('/signup')</div></div>
+    <div class="code-body"><pre><span class="fn">@app.route</span>(<span class="str">'/signup'</span>, methods=[<span class="str">'GET'</span>, <span class="str">'POST'</span>])
+<span class="kw">def</span> <span class="fn">signup</span>():
+    <span class="kw">if</span> request.method == <span class="str">'POST'</span>:
+<span class="hl-line">        username = request.form[<span class="str">'username'</span>]</span>
+<span class="hl-line">        password = request.form[<span class="str">'password'</span>]</span>
+<span class="hl-line">        email    = request.form[<span class="str">'email'</span>]</span>
+<span class="hl-line">        phone    = request.form[<span class="str">'phone'</span>]</span>
+
+<span class="hl-blue">        success = <span class="fn">insert_user</span>(username, password, email, phone)</span>
+
+<span class="hl-green">        <span class="kw">if</span> success:
+            <span class="fn">flash</span>(<span class="str">"נרשמת בהצלחה!"</span>, <span class="str">"success"</span>)
+            <span class="kw">return</span> <span class="fn">redirect</span>(<span class="fn">url_for</span>(<span class="str">'login'</span>))</span>
+<span class="hl-red">        <span class="kw">else</span>:
+            <span class="fn">flash</span>(<span class="str">"שם המשתמש כבר תפוס"</span>, <span class="str">"error"</span>)</span>
+
+    <span class="kw">return</span> <span class="fn">render_template</span>(<span class="str">'signup.html'</span>, user=current_user)</pre></div>
+  </div>
+  <div class="card">
+    <h3>🔍 ניתוח הזרימה</h3>
+    <div class="annotated-line">
+      <code>request.form['username']</code>
+      <div class="desc">שולפים את הערכים שהמשתמש הקליד בטופס. שם השדה חייב להתאים ל-<ic>name</ic> של <ic>&lt;input&gt;</ic> ב-HTML.</div>
+    </div>
+    <div class="annotated-line blue">
+      <code>insert_user(...)</code>
+      <div class="desc">קוראים לפונקציה שכתבנו. היא מחזירה <ic>True</ic> אם הצליחה, <ic>False</ic> אם username תפוס.</div>
+    </div>
+    <div class="annotated-line green">
+      <code>flash + redirect → login</code>
+      <div class="desc">הצלחה — הודעת Flash "נרשמת בהצלחה!" ומפנים לדף login כדי שיתחבר עם הפרטים החדשים.</div>
+    </div>
+    <div class="annotated-line red">
+      <code>flash "שם המשתמש כבר תפוס"</code>
+      <div class="desc">כישלון — מציגים הודעת שגיאה. הקוד ממשיך לסוף ומחזיר את עמוד signup שוב עם ההודעה.</div>
+    </div>
+    <div class="callout purple">
+      <span class="icon">💡</span>
+      <div class="body"><strong>הזרימה המלאה:</strong> משתמש שולח טופס ← POST מגיע ← שולפים ערכים ← insert_user() ← הצלחה? redirect לlogin — כישלון? signup שוב + הודעה</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 9 -->
+<div class="slide" id="slide-6">
+  <div class="card purple">
+    <h2>🔑 SELECT לצורך Login — fetchone()</h2>
+    <p>ב-login לא רוצים את כל המשתמשים — רק לבדוק אם <strong>username + password</strong> תואמים:</p>
+  </div>
+  <div class="code-block">
+    <div class="code-header"><div class="code-filename"><span class="dr"></span><span class="dy"></span><span class="dg"></span>&nbsp; main.py — @app.route('/login')</div></div>
+    <div class="code-body"><pre><span class="fn">@app.route</span>(<span class="str">'/login'</span>, methods=[<span class="str">'GET'</span>, <span class="str">'POST'</span>])
+<span class="kw">def</span> <span class="fn">login</span>():
+    <span class="kw">global</span> current_user
+    message = <span class="kw">None</span>
+    <span class="kw">if</span> request.method == <span class="str">'POST'</span>:
+        username = request.form[<span class="str">'username'</span>]
+        password = request.form[<span class="str">'password'</span>]
+        conn = sqlite3.<span class="fn">connect</span>(<span class="str">'users.db'</span>)
+        c = conn.<span class="fn">cursor</span>()
+<span class="hl-line">        c.<span class="fn">execute</span>(<span class="str">"SELECT * FROM users WHERE username = ?"</span>, (username,))</span>
+<span class="hl-line">        user = c.<span class="fn">fetchone</span>()</span>
+        conn.<span class="fn">close</span>()
+<span class="hl-blue">        <span class="kw">if</span> user:                         <span class="comment">← משתמש נמצא?</span></span>
+<span class="hl-green">            <span class="kw">if</span> user[<span class="str">1</span>] == password:      <span class="comment">← סיסמה נכונה?</span>
+                current_user = user[<span class="str">0</span>]
+                <span class="fn">flash</span>(<span class="str">" !נכנסת בהצלחה"</span>, <span class="str">"success"</span>)
+                <span class="kw">return</span> <span class="fn">redirect</span>(<span class="fn">url_for</span>(<span class="str">'home'</span>))</span>
+<span class="hl-red">            <span class="kw">else</span>:
+                message = <span class="str">"סיסמה שגויה"</span></span>
+<span class="hl-red">        <span class="kw">else</span>:
+            message = <span class="str">"שם משתמש לא קיים"</span></span>
+    <span class="kw">return</span> <span class="fn">render_template</span>(<span class="str">'login.html'</span>, message=message, user=current_user)</pre></div>
+  </div>
+  <div class="card">
+    <h3>🔍 מבנה tuple מ-fetchone()</h3>
+    <p>כשה-SELECT מחזיר תוצאה, <ic>fetchone()</ic> מחזיר <strong>tuple</strong> לפי סדר העמודות בטבלה:</p>
+    <div class="db-visual">
+      <div class="db-visual-header"><span class="db-name">מה fetchone() מחזיר</span></div>
+      <table class="db-inner">
+        <tr><th>משתנה</th><th>ערך לדוגמה</th><th>מה זה?</th></tr>
+        <tr><td class="col-pk">user[0]</td><td style="color:#c3e88d;">"alice"</td><td>username</td></tr>
+        <tr><td class="col-pk">user[1]</td><td style="color:#c3e88d;">"pass123"</td><td>password — משווים אליו</td></tr>
+        <tr><td class="col-pk">user[2]</td><td style="color:#c3e88d;">"alice@school.ac.il"</td><td>email</td></tr>
+        <tr><td class="col-pk">user[3]</td><td style="color:#c3e88d;">"050-1234567"</td><td>phone</td></tr>
+      </table>
+    </div>
+    <div class="annotated-line blue">
+      <code>if user:</code>
+      <div class="desc">tuple הוא <ic>True</ic>, None הוא <ic>False</ic>. בדיקה ראשונה: האם username בכלל קיים?</div>
+    </div>
+    <div class="annotated-line green">
+      <code>user[1] == password</code>
+      <div class="desc">בדיקה שנייה: האם הסיסמה שהוקלדה תואמת לסיסמה שמורה ב-DB. <ic>user[1]</ic> = עמודת password.</div>
+    </div>
+    <div class="callout warn">
+      <span class="icon">💡</span>
+      <div class="body"><strong>שתי הודעות שגיאה שונות:</strong> "שם משתמש לא קיים" vs "סיסמה שגויה". שתי בדיקות נפרדות מאפשרות חוויית משתמש טובה יותר.</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 9 -->
+<div class="slide" id="slide-7">
+  <div class="card purple">
+    <h2>👥 SELECT * — שליפת כל המשתמשים</h2>
+    <p>דף users מציג את כל המשתמשים. כאן משתמשים ב-<ic>fetchall()</ic> שמחזיר רשימה של tuples:</p>
+  </div>
+  <div class="code-block">
+    <div class="code-header"><div class="code-filename"><span class="dr"></span><span class="dy"></span><span class="dg"></span>&nbsp; main.py — @app.route('/users')</div></div>
+    <div class="code-body"><pre><span class="fn">@app.route</span>(<span class="str">'/users'</span>)
+<span class="kw">def</span> <span class="fn">show_users</span>():
+    conn = sqlite3.<span class="fn">connect</span>(<span class="str">'users.db'</span>)
+    c = conn.<span class="fn">cursor</span>()
+<span class="hl-line">    c.<span class="fn">execute</span>(<span class="str">"SELECT * FROM users"</span>)</span>
+<span class="hl-blue">    users = c.<span class="fn">fetchall</span>()</span>
+    conn.<span class="fn">close</span>()
+<span class="hl-green">    <span class="kw">return</span> <span class="fn">render_template</span>(<span class="str">'users.html'</span>, users=users, user=current_user)</span></pre></div>
+  </div>
+  <div class="before-after">
+    <div>
+      <div class="ba-label purple">fetchone() — שורה בודדת</div>
+      <div class="code-block">
+        <div class="code-body"><pre><span class="comment"># מחזיר tuple אחד:</span>
+("alice","pass","a@b.com","050")
+<span class="comment"># או None אם לא נמצא</span>
+<span class="comment"># שימוש: login</span></pre></div>
+      </div>
+    </div>
+    <div>
+      <div class="ba-label blue">fetchall() — כל השורות</div>
+      <div class="code-block">
+        <div class="code-body"><pre><span class="comment"># מחזיר list של tuples:</span>
+[("alice","pass","a@b.com","050"),
+ ("bob","1234","b@c.com", None),
+ ...]
+<span class="comment"># שימוש: users page</span></pre></div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>📊 ויזואליזציה — fetchall() מחזיר</h3>
+    <div class="db-visual">
+      <div class="db-visual-header"><span>🗃️</span><span class="db-name">users — fetchall()</span></div>
+      <table class="db-inner">
+        <tr><th>אינדקס ברשימה</th><th>[0] username</th><th>[1] password</th><th>[2] email</th><th>[3] phone</th></tr>
+        <tr><td style="color:var(--warn);">users[0]</td><td class="col-pk">alice</td><td style="color:#c3e88d;">pass123</td><td style="color:#c3e88d;">alice@school.ac.il</td><td style="color:#c3e88d;">050-111</td></tr>
+        <tr><td style="color:var(--warn);">users[1]</td><td class="col-pk">bob42</td><td style="color:#c3e88d;">b0bpass</td><td style="color:#c3e88d;">bob@email.com</td><td style="color:var(--text-muted);">None</td></tr>
+        <tr><td style="color:var(--warn);">users[2]</td><td class="col-pk">carol</td><td style="color:#c3e88d;">carol99</td><td style="color:#c3e88d;">carol@x.com</td><td style="color:#c3e88d;">052-222</td></tr>
+      </table>
+    </div>
+    <div class="annotated-line green">
+      <code>render_template('users.html', users=users)</code>
+      <div class="desc">מעבירים את הרשימה לתבנית. שם המשתנה (<ic>users</ic>) חייב להתאים לשם שבו נשתמש ב-Jinja2.</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 9 -->
+<div class="slide" id="slide-8">
+  <div class="card purple">
+    <h2>🎨 Jinja2 — הצגת הנתונים ב-users.html</h2>
+    <p>עכשיו נסתכל על התבנית — איך מציגים את רשימת המשתמשים שקיבלנו מה-DB:</p>
+  </div>
+  <div class="code-block">
+    <div class="code-header"><div class="code-filename"><span class="dr"></span><span class="dy"></span><span class="dg"></span>&nbsp; templates/users.html</div></div>
+    <div class="code-body"><pre><span class="jinja">{% extends "base.html" %}</span>
+
+<span class="jinja">{% block content %}</span>
+<span class="tag">&lt;h2&gt;</span>User List<span class="tag">&lt;/h2&gt;</span>
+<span class="tag">&lt;table</span> <span class="attr">border</span>=<span class="str">"1"</span><span class="tag">&gt;</span>
+    <span class="tag">&lt;tr&gt;</span>
+        <span class="tag">&lt;th&gt;</span>Username<span class="tag">&lt;/th&gt;&lt;th&gt;</span>Password<span class="tag">&lt;/th&gt;</span>
+        <span class="tag">&lt;th&gt;</span>Email<span class="tag">&lt;/th&gt;&lt;th&gt;</span>Phone<span class="tag">&lt;/th&gt;</span>
+    <span class="tag">&lt;/tr&gt;</span>
+<span class="hl-line">    <span class="jinja">{% for user in users %}</span></span>
+    <span class="tag">&lt;tr&gt;</span>
+<span class="hl-blue">        <span class="tag">&lt;td&gt;</span><span class="jinja">{{ </span><span class="jinja-v">user[0]</span><span class="jinja"> }}</span><span class="tag">&lt;/td&gt;</span>  <span class="comment">&lt;!-- username --&gt;</span></span>
+<span class="hl-blue">        <span class="tag">&lt;td&gt;</span><span class="jinja">{{ </span><span class="jinja-v">user[1]</span><span class="jinja"> }}</span><span class="tag">&lt;/td&gt;</span>  <span class="comment">&lt;!-- password --&gt;</span></span>
+<span class="hl-blue">        <span class="tag">&lt;td&gt;</span><span class="jinja">{{ </span><span class="jinja-v">user[2]</span><span class="jinja"> }}</span><span class="tag">&lt;/td&gt;</span>  <span class="comment">&lt;!-- email    --&gt;</span></span>
+<span class="hl-blue">        <span class="tag">&lt;td&gt;</span><span class="jinja">{{ </span><span class="jinja-v">user[3]</span><span class="jinja"> }}</span><span class="tag">&lt;/td&gt;</span>  <span class="comment">&lt;!-- phone    --&gt;</span></span>
+    <span class="tag">&lt;/tr&gt;</span>
+<span class="hl-line">    <span class="jinja">{% endfor %}</span></span>
+<span class="tag">&lt;/table&gt;</span>
+<span class="jinja">{% endblock %}</span></pre></div>
+  </div>
+  <div class="card">
+    <h3>🔍 ניתוח התבנית</h3>
+    <div class="annotated-line">
+      <code>{% for user in users %}</code>
+      <div class="desc">לולאת Jinja2 על רשימת ה-tuples מ-<ic>fetchall()</ic>. בכל איטרציה <ic>user</ic> = tuple של שורה אחת.</div>
+    </div>
+    <div class="annotated-line blue">
+      <code>{{ user[0] }}</code>
+      <div class="desc">גישה לאינדקס 0 ב-tuple = username. הסדר לפי CREATE TABLE: 0=username, 1=password, 2=email, 3=phone.</div>
+    </div>
+    <div class="annotated-line green">
+      <code>{% endfor %}</code>
+      <div class="desc">סגירת הלולאה. כל מה שבין for ל-endfor חוזר עבור כל שורה בטבלה.</div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>📋 login.html — הצגת הודעת שגיאה</h3>
+    <p>בדף login ה-template מציג הודעה מותנית — רק אם קיבלנו <ic>message</ic> מה-route:</p>
+    <div class="code-block">
+      <div class="code-header"><div class="code-filename"><span class="dr"></span><span class="dy"></span><span class="dg"></span>&nbsp; templates/login.html</div></div>
+      <div class="code-body"><pre><span class="jinja">{% block content %}</span>
+<span class="tag">&lt;h2&gt;</span>Login Page<span class="tag">&lt;/h2&gt;</span>
+<span class="hl-line"><span class="jinja">{% if message %}</span></span>
+<span class="hl-red">    <span class="tag">&lt;p</span> <span class="attr">class</span>=<span class="str">"error-message"</span><span class="tag">&gt;</span><span class="jinja">{{ </span><span class="jinja-v">message</span><span class="jinja"> }}</span><span class="tag">&lt;/p&gt;</span></span>
+<span class="hl-line"><span class="jinja">{% endif %}</span></span>
+<span class="tag">&lt;form</span> <span class="attr">method</span>=<span class="str">"post"</span><span class="tag">&gt;</span>
+    <span class="tag">&lt;input</span> <span class="attr">type</span>=<span class="str">"text"</span>   <span class="attr">name</span>=<span class="str">"username"</span><span class="tag">&gt;</span>
+    <span class="tag">&lt;input</span> <span class="attr">type</span>=<span class="str">"text"</span>   <span class="attr">name</span>=<span class="str">"password"</span><span class="tag">&gt;</span>
+    <span class="tag">&lt;input</span> <span class="attr">type</span>=<span class="str">"submit"</span> <span class="attr">value</span>=<span class="str">"Login"</span><span class="tag">&gt;</span>
+<span class="tag">&lt;/form&gt;</span>
+<span class="jinja">{% endblock %}</span></pre></div>
+    </div>
+    <div class="annotated-line red">
+      <code>{% if message %}</code>
+      <div class="desc">מציג את ה-<ic>&lt;p&gt;</ic> רק כשיש הודעה שגיאה. כשה-route שולח <ic>message=None</ic> בGET — הפסקה לא מופיעה.</div>
+    </div>
+    <div class="callout warn">
+      <span class="icon">💡</span>
+      <div class="body"><strong>שימו לב לשמות:</strong> <ic>name="username"</ic> ב-HTML חייב להתאים ל-<ic>request.form['username']</ic> ב-Python. ואת המשתנה <ic>message</ic> שולחים מה-route ב-<ic>render_template(..., message=message)</ic>.</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 9 -->
+<div class="slide" id="slide-9">
+  <div class="card purple">
+    <h2>🧩 בדקו את עצמכם!</h2>
+  </div>
+  <div class="card" id="q1-card">
+    <div class="quiz-q">שאלה 1 — מדוע <ic>insert_user()</ic> מבצעת SELECT לפני ה-INSERT?</div>
+    <div class="quiz-options">
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q1')">כי SELECT מהיר יותר מ-INSERT</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,true,'q1')">כדי לבדוק שה-username לא קיים — PRIMARY KEY ימנע כפילות ויזרוק Exception, אבל כך אנחנו שולטים בתגובה ומחזירים False מסודר</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q1')">כי INSERT לא עובד בלי SELECT לפניו</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q1')">כדי לבדוק שהחיבור ל-DB פועל</div>
+    </div>
+    <div class="quiz-feedback" id="q1-fb"></div>
+  </div>
+  <div class="card" id="q2-card">
+    <div class="quiz-q">שאלה 2 — מה ההבדל בין <ic>fetchone()</ic> לבין <ic>fetchall()</ic>?</div>
+    <div class="quiz-options">
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q2')">fetchone() מהיר יותר, fetchall() מדויק יותר</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,true,'q2')">fetchone() מחזיר tuple בודד (או None), fetchall() מחזיר רשימה של כל ה-tuples</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q2')">fetchone() לשאילתות SELECT, fetchall() לשאילתות INSERT</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q2')">אין הבדל — שניהם מחזירים אותו דבר</div>
+    </div>
+    <div class="quiz-feedback" id="q2-fb"></div>
+  </div>
+  <div class="card" id="q3-card">
+    <div class="quiz-q">שאלה 3 — ב-users.html כתוב <ic>user[0]</ic>, <ic>user[1]</ic> וכו׳. מה מייצג <ic>user[2]</ic>?</div>
+    <div class="quiz-options">
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q3')">username</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q3')">password</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,true,'q3')">email — לפי סדר העמודות בטבלה: 0=username, 1=password, 2=email, 3=phone</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q3')">phone</div>
+    </div>
+    <div class="quiz-feedback" id="q3-fb"></div>
+  </div>
+  <div class="card" id="q4-card">
+    <div class="quiz-q">שאלה 4 — למה כותבים <ic>(username,)</ic> עם פסיק בסוף בשאילתות?</div>
+    <div class="quiz-options">
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q4')">כי SQL דורש פסיק אחרי כל ערך</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,true,'q4')">כי Python דורשת tuple כפרמטר, ו-(username) זה רק סוגריים רגילים — הפסיק הופך אותו ל-tuple אמיתי</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q4')">זה לא חשוב — אפשר גם בלי פסיק</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q4')">כי sqlite3 דורש רווח אחרי הערך</div>
+    </div>
+    <div class="quiz-feedback" id="q4-fb"></div>
+  </div>
+  <div class="card" id="q5-card">
+    <div class="quiz-q">שאלה 5 — ב-login מבצעים <ic>if user:</ic> ואז <ic>if user[1] == password:</ic>. למה שתי בדיקות ולא אחת?</div>
+    <div class="quiz-options">
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q5')">כי Python לא תומכת בשני תנאים בשורה אחת</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q5')">כי fetchone() לא מחזיר את הסיסמה</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,true,'q5')">כי צריך לבדוק שני דברים בנפרד: (1) האם username בכלל קיים, (2) אם כן — האם הסיסמה נכונה. בלי הבדיקה הראשונה user[1] על None יקרוס</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q5')">אין סיבה — אפשר לאחד לבדיקה אחת</div>
+    </div>
+    <div class="quiz-feedback" id="q5-fb"></div>
+  </div>
+  <div class="card success-card">
+    <h2>🏁 סיכום הלומדה</h2>
+    <ul class="checklist">
+      <li><ic>INSERT INTO users VALUES (?, ?, ?, ?)</ic> — מוסיף שורה חדשה</li>
+      <li>לפני INSERT — בודקים כפילות עם <ic>SELECT + fetchone()</ic></li>
+      <li>סימן <ic>?</ic> + tuple — מגן מ-SQL Injection</li>
+      <li><ic>(username,)</ic> עם פסיק — יוצר tuple של איבר אחד ב-Python</li>
+      <li><ic>fetchone()</ic> — tuple בודד או None (שימוש: login)</li>
+      <li><ic>fetchall()</ic> — רשימה של כל ה-tuples (שימוש: users page)</li>
+      <li>גישה: <ic>user[0]</ic>=username, <ic>user[1]</ic>=password, <ic>user[2]</ic>=email, <ic>user[3]</ic>=phone</li>
+      <li>ב-Jinja2: <ic>{% for user in users %}</ic> על תוצאת fetchall()</li>
+      <li>ב-login: שתי בדיקות נפרדות — קיום username ואז נכונות סיסמה</li>
+    </ul>
+  </div>
+  <div class="card sky">
+    <h2>🚀 משימת המשך</h2>
+    <p><strong>1.</strong> שנו את users.html כך שלא יציג את עמודת הסיסמה — מידע רגיש לא צריך להיות גלוי. רמז: הסירו את השורה עם <ic>user[1]</ic></p>
+    <br>
+    <p><strong>2.</strong> הוסיפו ב-users.html הצגת מספר המשתמשים הרשומים. Jinja2 תומך ב-<ic>{{ users|length }}</ic></p>
+    <br>
+    <p><strong>3. אתגר:</strong> שנו את שאילתת ה-SELECT ב-show_users() כך שתחזיר רק username ו-email: <ic>SELECT username, email FROM users</ic> — ועדכנו את ה-template בהתאם</p>
+  </div>
+</div>
+
+<!-- Navigation -->
+<div class="btn-row">
+  <button class="btn btn-secondary" id="prevBtn" disabled>← הקודם</button>
+  <span class="slide-num" id="slideNum">שלב 1 מתוך 9</span>
+  <button class="btn btn-primary" id="nextBtn">הבא ←</button>
+</div>
+</div>
+
+<script>
+const TOTAL=9;let current=1;const quizAnswered={};
+const feedbacks={
+  q1:{correct:'✓ נכון! PRIMARY KEY ימנע כפילות אבל יזרוק Exception. הבדיקה מראש מאפשרת לנו לטפל בצורה נקייה ולהחזיר False מסודר.',wrong:'✗ לא מדויק. הבדיקה לפני INSERT נועדה לנהל כפילויות בצורה מבוקרת — להחזיר False במקום לקרוס.'},
+  q2:{correct:'✓ בדיוק! fetchone() = tuple אחד או None. fetchall() = list של כל ה-tuples. fetchone() לחיפוש ספציפי, fetchall() לכל הרשימה.',wrong:'✗ לא מדויק. ההבדל בכמות: fetchone() מחזיר tuple אחד (או None), fetchall() מחזיר list של כל ה-tuples.'},
+  q3:{correct:'✓ נכון! סדר לפי CREATE TABLE: user[0]=username, user[1]=password, user[2]=email, user[3]=phone.',wrong:'✗ לא מדויק. הסדר: user[0]=username, user[1]=password, user[2]=email, user[3]=phone.'},
+  q4:{correct:'✓ בדיוק! (x) = סוגריים רגילים. (x,) = tuple. execute() דורש tuple כפרמטר שני — הפסיק הכרחי.',wrong:'✗ לא מדויק. הסיבה Python: (x) זה ביטוי, (x,) זה tuple. execute() מצפה ל-tuple כפרמטר שני.'},
+  q5:{correct:'✓ מצוין! שתי הבדיקות נחוצות: (1) אם נדלג ו-user הוא None — user[1] יקרוס. (2) הודעות שגיאה שונות לכל מקרה.',wrong:'✗ לא מדויק. הבדיקה הראשונה הכרחית — אם user הוא None ומנסים user[1] מקבלים TypeError. זה גם מאפשר הודעות שגיאה שונות.'}
+};
+function initDots(){const c=document.getElementById('navDots');for(let i=1;i<=TOTAL;i++){const d=document.createElement('div');d.className='dot'+(i===1?' active':'');d.id='dot-'+i;c.appendChild(d);d.addEventListener('click',(function(n){return function(){goTo(n);};})(i));}}
+function goTo(n){document.getElementById('slide-'+current).classList.remove('active');document.getElementById('dot-'+current).classList.remove('active');if(current<n)document.getElementById('dot-'+current).classList.add('completed');current=n;document.getElementById('slide-'+current).classList.add('active');document.getElementById('dot-'+current).classList.add('active');window.scrollTo({top:0,behavior:'smooth'});updateUI();}
+function changeSlide(dir){const next=current+dir;if(next<1||next>TOTAL)return;goTo(next);}
+function updateUI(){document.getElementById('prevBtn').disabled=current===1;document.getElementById('nextBtn').textContent=current===TOTAL?'✓ סיום':'הבא ←';document.getElementById('slideNum').textContent='שלב '+current+' מתוך '+TOTAL;const pct=((current-1)/(TOTAL-1))*100;document.getElementById('progressFill').style.width=pct+'%';document.getElementById('progressText').textContent='שלב '+current+' מתוך '+TOTAL;}
+function checkQuiz(el,isCorrect,qid){if(quizAnswered[qid])return;quizAnswered[qid]=true;el.classList.add(isCorrect?'correct':'wrong');const fb=document.getElementById(qid+'-fb');fb.classList.add('show',isCorrect?'correct':'wrong');fb.textContent=isCorrect?feedbacks[qid].correct:feedbacks[qid].wrong;if(!isCorrect){el.parentElement.querySelectorAll('.quiz-opt').forEach(function(opt){if(opt.getAttribute('onclick')&&opt.getAttribute('onclick').includes('true'))opt.classList.add('correct');});}document.querySelectorAll('#'+qid+'-card .quiz-opt').forEach(function(o){o.classList.add('locked');});}
+document.addEventListener('DOMContentLoaded',function(){initDots();updateUI();document.getElementById('prevBtn').addEventListener('click',function(){changeSlide(-1);});document.getElementById('nextBtn').addEventListener('click',function(){changeSlide(1);});});
+</script>
+</body>
+</html>

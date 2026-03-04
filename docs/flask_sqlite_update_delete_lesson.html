@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>לומדה: UPDATE ו-DELETE</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;600;700;900&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0e0f14;--surface:#15171f;--surface2:#1d2030;
+    --accent:#a78bfa;--accent2:#38bdf8;--success:#4ade80;
+    --danger:#f87171;--warn:#fb923c;--text:#e2e8f0;
+    --text-muted:#64748b;--border:#232640;--code-bg:#090a0f;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);line-height:1.7;min-height:100vh;}
+  .hero{background:linear-gradient(160deg,#130f20 0%,#0e0f14 60%);border-bottom:1px solid var(--border);padding:3rem 2rem 2.5rem;text-align:center;position:relative;overflow:hidden;}
+  .hero::before{content:'';position:absolute;top:-40%;left:50%;transform:translateX(-50%);width:700px;height:400px;background:radial-gradient(ellipse,rgba(167,139,250,0.08) 0%,transparent 70%);pointer-events:none;}
+  .badge{display:inline-block;background:rgba(167,139,250,0.12);color:var(--accent);border:1px solid rgba(167,139,250,0.35);border-radius:999px;padding:.3rem 1.1rem;font-size:.8rem;font-weight:600;letter-spacing:.05em;margin-bottom:1rem;}
+  .hero h1{font-size:clamp(2rem,5vw,3rem);font-weight:900;line-height:1.2;margin-bottom:1rem;}
+  .hero h1 span{color:var(--accent);}
+  .hero p{color:var(--text-muted);font-size:1.05rem;max-width:540px;margin:0 auto;}
+  .progress-container{background:var(--surface);border-bottom:1px solid var(--border);padding:1rem 2rem;display:flex;align-items:center;gap:1rem;position:sticky;top:0;z-index:100;}
+  .progress-bar{flex:1;height:5px;background:var(--border);border-radius:999px;overflow:hidden;}
+  .progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:999px;transition:width .5s ease;width:0%;}
+  .progress-text{font-size:.82rem;color:var(--text-muted);white-space:nowrap;}
+  .nav-dots{display:flex;justify-content:center;gap:.5rem;padding:1.2rem;flex-wrap:wrap;}
+  .dot{width:11px;height:11px;border-radius:50%;background:var(--border);cursor:pointer;transition:all .3s;}
+  .dot.active{background:var(--accent);transform:scale(1.35);}
+  .dot.completed{background:var(--accent2);}
+  .container{max-width:880px;margin:0 auto;padding:0 1.5rem;}
+  .slide{display:none;animation:fadeIn .35s ease;}
+  .slide.active{display:block;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:2rem;margin-bottom:1.5rem;}
+  .card.purple{border-color:rgba(167,139,250,.4);background:linear-gradient(135deg,rgba(167,139,250,.05) 0%,var(--surface) 100%);}
+  .card.sky{border-color:rgba(56,189,248,.4);background:linear-gradient(135deg,rgba(56,189,248,.05) 0%,var(--surface) 100%);}
+  .card.success-card{border-color:rgba(74,222,128,.35);background:rgba(74,222,128,.04);}
+  .card.danger-card{border-color:rgba(248,113,113,.35);background:rgba(248,113,113,.04);}
+  .card h2{font-size:1.4rem;font-weight:700;margin-bottom:1rem;display:flex;align-items:center;gap:.6rem;}
+  .card h3{font-size:1.05rem;font-weight:600;margin:1.2rem 0 .6rem;color:var(--accent2);}
+  .card p{color:#94a3b8;margin-bottom:.7rem;}
+  .code-block{background:var(--code-bg);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin:1rem 0;font-family:'Fira Code',monospace;}
+  .code-header{background:var(--surface2);padding:.55rem 1rem;display:flex;align-items:center;border-bottom:1px solid var(--border);}
+  .code-filename{font-size:.78rem;color:var(--text-muted);display:flex;align-items:center;gap:.5rem;}
+  .dr{width:9px;height:9px;border-radius:50%;background:#ff5f57;display:inline-block;}
+  .dy{width:9px;height:9px;border-radius:50%;background:#febc2e;display:inline-block;}
+  .dg{width:9px;height:9px;border-radius:50%;background:#28c840;display:inline-block;}
+  .code-body{padding:1.1rem 1.3rem;overflow-x:auto;font-size:.83rem;line-height:1.9;direction:ltr;text-align:left;}
+  .code-body pre{white-space:pre;}
+  .kw{color:#c792ea;}.fn{color:#82aaff;}.str{color:#c3e88d;}.comment{color:#546e7a;font-style:italic;}
+  .sql-kw{color:#38bdf8;font-weight:600;}.tag{color:#89ddff;}.attr{color:#c3e88d;}
+  .jinja{color:#ffcb6b;font-weight:600;}.jinja-v{color:#ff9cac;}
+  .hl-line{background:rgba(167,139,250,.10);display:block;margin:0 -1.3rem;padding:0 1.3rem;border-right:3px solid var(--accent);}
+  .hl-blue{background:rgba(56,189,248,.08);display:block;margin:0 -1.3rem;padding:0 1.3rem;border-right:3px solid var(--accent2);}
+  .hl-green{background:rgba(74,222,128,.08);display:block;margin:0 -1.3rem;padding:0 1.3rem;border-right:3px solid var(--success);}
+  .hl-red{background:rgba(248,113,113,.08);display:block;margin:0 -1.3rem;padding:0 1.3rem;border-right:3px solid var(--danger);}
+  .hl-warn{background:rgba(251,146,60,.08);display:block;margin:0 -1.3rem;padding:0 1.3rem;border-right:3px solid var(--warn);}
+  .annotated-line{display:flex;align-items:flex-start;gap:.8rem;margin:.6rem 0;padding:.7rem .9rem;background:var(--surface2);border-radius:8px;border-right:3px solid var(--accent);font-size:.9rem;}
+  .annotated-line.blue{border-color:var(--accent2);}
+  .annotated-line.green{border-color:var(--success);}
+  .annotated-line.red{border-color:var(--danger);}
+  .annotated-line.warn{border-color:var(--warn);}
+  .annotated-line code{font-family:'Fira Code',monospace;font-size:.81rem;background:var(--code-bg);padding:.15rem .5rem;border-radius:5px;color:var(--accent);white-space:nowrap;flex-shrink:0;}
+  .annotated-line.blue code{color:var(--accent2);}
+  .annotated-line.green code{color:var(--success);}
+  .annotated-line.red code{color:var(--danger);}
+  .annotated-line.warn code{color:var(--warn);}
+  .annotated-line .desc{color:#94a3b8;font-size:.88rem;}
+  .callout{padding:.85rem 1rem;border-radius:10px;margin:.9rem 0;font-size:.9rem;display:flex;gap:.7rem;align-items:flex-start;}
+  .callout.purple{background:rgba(167,139,250,.07);border:1px solid rgba(167,139,250,.25);}
+  .callout.blue{background:rgba(56,189,248,.07);border:1px solid rgba(56,189,248,.25);}
+  .callout.green{background:rgba(74,222,128,.07);border:1px solid rgba(74,222,128,.25);}
+  .callout.red{background:rgba(248,113,113,.07);border:1px solid rgba(248,113,113,.25);}
+  .callout.warn{background:rgba(251,146,60,.07);border:1px solid rgba(251,146,60,.25);}
+  .callout .icon{font-size:1.1rem;flex-shrink:0;margin-top:.05rem;}
+  .callout .body{color:#94a3b8;}
+  .callout .body strong{color:var(--text);}
+  .before-after{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:1rem 0;}
+  .ba-label{font-size:.82rem;font-weight:700;margin-bottom:.5rem;padding:.35rem .8rem;border-radius:6px;display:inline-block;}
+  .ba-label.red{background:rgba(248,113,113,.15);color:var(--danger);}
+  .ba-label.green{background:rgba(74,222,128,.15);color:var(--success);}
+  .ba-label.blue{background:rgba(56,189,248,.15);color:var(--accent2);}
+  .db-visual{border-radius:10px;overflow:hidden;border:1px solid var(--border);margin:.9rem 0;}
+  .db-inner{width:100%;border-collapse:collapse;background:var(--code-bg);}
+  .db-inner th{background:var(--surface2);padding:.55rem 1rem;text-align:right;font-family:'Fira Code',monospace;font-size:.73rem;color:var(--accent2);font-weight:700;border-bottom:1px solid var(--border);}
+  .db-inner td{padding:.6rem 1rem;font-family:'Fira Code',monospace;font-size:.8rem;border-bottom:1px solid var(--border);color:var(--text-muted);vertical-align:middle;}
+  .db-inner tr:last-child td{border-bottom:none;}
+  .db-inner td.col-pk{color:var(--success);font-weight:600;}
+  .db-inner td.col-gone{color:var(--danger);text-decoration:line-through;opacity:.5;}
+  .db-inner tr.row-deleted{opacity:.35;background:rgba(248,113,113,.04);}
+  .steps{display:flex;flex-direction:column;margin:.9rem 0;}
+  .step{display:flex;gap:1rem;align-items:flex-start;padding:.9rem 0;border-bottom:1px solid var(--border);}
+  .step:last-child{border-bottom:none;}
+  .step-num{width:28px;height:28px;border-radius:50%;background:var(--accent);color:#0e0f14;font-size:.75rem;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:.1rem;}
+  .step-num.blue{background:var(--accent2);}
+  .step-num.green{background:var(--success);}
+  .step-num.red{background:var(--danger);}
+  .step-body .step-title{font-weight:700;font-size:.95rem;margin-bottom:.2rem;}
+  .step-body .step-desc{color:#94a3b8;font-size:.87rem;}
+  .access-table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.88rem;}
+  .access-table th{background:var(--surface2);padding:.7rem 1rem;text-align:right;font-weight:600;color:var(--text-muted);font-size:.8rem;}
+  .access-table td{padding:.65rem 1rem;border-bottom:1px solid var(--border);color:#94a3b8;}
+  .access-table tr:last-child td{border-bottom:none;}
+  .access-table td:first-child{font-family:'Fira Code',monospace;font-size:.82rem;color:var(--accent2);}
+  .pill{display:inline-block;padding:.2rem .7rem;border-radius:999px;font-size:.75rem;font-weight:700;}
+  .pill.yes{background:rgba(74,222,128,.15);color:var(--success);}
+  .pill.warn{background:rgba(251,146,60,.15);color:var(--warn);}
+  .checklist{list-style:none;}
+  .checklist li{padding:.55rem 0;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:.8rem;font-size:.93rem;color:#94a3b8;}
+  .checklist li::before{content:'✓';color:var(--accent);font-weight:700;flex-shrink:0;}
+  .quiz-q{font-size:1rem;font-weight:600;margin-bottom:.9rem;}
+  .quiz-options{display:flex;flex-direction:column;gap:.6rem;}
+  .quiz-opt{background:var(--surface2);border:2px solid var(--border);border-radius:10px;padding:.75rem 1.1rem;cursor:pointer;transition:all .2s;font-size:.93rem;direction:rtl;text-align:right;font-family:'Heebo',sans-serif;}
+  .quiz-opt:hover:not(.locked){border-color:var(--accent);background:rgba(167,139,250,.07);}
+  .quiz-opt.correct{border-color:var(--success);background:rgba(74,222,128,.09);color:var(--success);}
+  .quiz-opt.wrong{border-color:var(--danger);background:rgba(248,113,113,.09);color:var(--danger);}
+  .quiz-feedback{margin-top:.9rem;padding:.85rem;border-radius:10px;display:none;font-size:.9rem;}
+  .quiz-feedback.show{display:block;}
+  .quiz-feedback.correct{background:rgba(74,222,128,.09);border:1px solid rgba(74,222,128,.3);color:var(--success);}
+  .quiz-feedback.wrong{background:rgba(248,113,113,.09);border:1px solid rgba(248,113,113,.3);color:var(--danger);}
+  ic{font-family:'Fira Code',monospace;font-size:.86em;background:var(--surface2);padding:.1em .4em;border-radius:4px;color:var(--accent);}
+  .mock-browser{border:1px solid var(--border);border-radius:12px;overflow:hidden;margin:1rem 0;}
+  .mock-bar{background:var(--surface2);padding:.5rem 1rem;display:flex;align-items:center;gap:.8rem;border-bottom:1px solid var(--border);}
+  .mock-dots{display:flex;gap:5px;}
+  .mock-url{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:.3rem .8rem;font-size:.78rem;font-family:'Fira Code',monospace;color:var(--text-muted);}
+  .mock-body{background:#1a1c24;padding:1.4rem 1.8rem;}
+  .mock-body h2{font-size:1rem;font-weight:700;margin-bottom:1rem;color:var(--text);}
+  .mock-label{font-size:.82rem;color:#94a3b8;margin-bottom:.25rem;display:block;}
+  .mock-label b{color:var(--accent);}
+  .mock-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:.45rem .7rem;font-size:.82rem;font-family:'Fira Code',monospace;color:var(--text);margin-bottom:.7rem;}
+  .mock-btn-update{background:rgba(56,189,248,.15);color:var(--accent2);border:1px solid rgba(56,189,248,.3);padding:.45rem 1.2rem;border-radius:6px;font-size:.82rem;font-family:'Heebo',sans-serif;font-weight:600;margin-left:.5rem;}
+  .mock-btn-delete{background:rgba(248,113,113,.15);color:var(--danger);border:1px solid rgba(248,113,113,.3);padding:.45rem 1.2rem;border-radius:6px;font-size:.82rem;font-family:'Heebo',sans-serif;font-weight:600;}
+  .btn-row{display:flex;justify-content:space-between;align-items:center;padding:2rem 0 3rem;gap:1rem;}
+  .btn{padding:.75rem 1.8rem;border-radius:10px;border:none;cursor:pointer;font-size:.95rem;font-family:'Heebo',sans-serif;font-weight:600;transition:all .25s;display:flex;align-items:center;gap:.4rem;}
+  .btn-primary{background:var(--accent);color:#0e0f14;}
+  .btn-primary:hover:not(:disabled){filter:brightness(1.1);transform:translateY(-2px);box-shadow:0 6px 20px rgba(167,139,250,.3);}
+  .btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
+  .btn-secondary:hover:not(:disabled){background:var(--surface);}
+  .btn:disabled{opacity:.35;cursor:not-allowed;}
+  .slide-num{color:var(--text-muted);font-size:.88rem;}
+  @media(max-width:640px){.before-after{grid-template-columns:1fr;}.btn-row{flex-direction:column;}.btn{width:100%;justify-content:center;}}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="badge">🎓 לומדת Flask — תיכון מגידו</div>
+  <h1>UPDATE ו-DELETE<br><span>עדכון ומחיקה ב-SQLite</span></h1>
+  <p>לומדים כיצד משנים פרטי משתמש קיים ומוחקים אותו — כולל route עדכון, טופס עם ערכים מולאים מראש, ואישור מחיקה ב-JavaScript</p>
+</div>
+
+<div class="progress-container">
+  <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+  <div class="progress-text" id="progressText">שלב 1 מתוך 8</div>
+</div>
+
+<div class="nav-dots" id="navDots"></div>
+
+<div class="container">
+
+<!-- ══════ SLIDE 1 ══════ -->
+<div class="slide active" id="slide-1">
+  <div class="card purple">
+    <h2>🗺️ מה נלמד — CRUD מושלם</h2>
+    <p>עד עכשיו למדנו Create ו-Read. בלומדה זו נשלים את ה-CRUD:</p>
+  </div>
+  <table class="access-table">
+    <tr><th>אות</th><th>פעולה</th><th>SQL</th><th>Route</th><th>סטטוס</th></tr>
+    <tr><td>C — Create</td><td>יצירה</td><td><ic>INSERT INTO</ic></td><td>/signup</td><td><span class="pill yes">✓ נלמד</span></td></tr>
+    <tr><td>R — Read</td><td>קריאה</td><td><ic>SELECT</ic></td><td>/login, /users</td><td><span class="pill yes">✓ נלמד</span></td></tr>
+    <tr><td>U — Update</td><td>עדכון</td><td><ic>UPDATE ... SET</ic></td><td>/update</td><td><span class="pill warn">← היום</span></td></tr>
+    <tr><td>D — Delete</td><td>מחיקה</td><td><ic>DELETE FROM</ic></td><td>/delete</td><td><span class="pill warn">← היום</span></td></tr>
+  </table>
+  <div class="card sky">
+    <h3>💡 מה נלמד בלומדה זו?</h3>
+    <ul class="checklist">
+      <li>פקודת <ic>UPDATE ... SET ... WHERE</ic> — שינוי ערכים בשורה קיימת</li>
+      <li>פקודת <ic>DELETE FROM ... WHERE</ic> — מחיקת שורה</li>
+      <li>route ה-/update — GET לטעינת פרטים, POST לשמירה</li>
+      <li>update.html — טופס עם ערכים מולאים מה-DB</li>
+      <li>למה username לא ניתן לשינוי (PRIMARY KEY)</li>
+      <li>אישור מחיקה ב-JavaScript עם <ic>window.confirm()</ic></li>
+      <li>⚠️ WHERE — מדוע הוא קריטי ב-UPDATE וב-DELETE</li>
+    </ul>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-secondary" id="prevBtn" disabled onclick="changeSlide(-1)">← הקודם</button>
+    <span class="slide-num" id="slideNum">שלב 1 מתוך 8</span>
+    <button class="btn btn-primary" id="nextBtn" onclick="changeSlide(1)">הבא ←</button>
+  </div>
+</div>
+
+<!-- ══════ SLIDE 2 ══════ -->
+<div class="slide" id="slide-2">
+  <div class="card purple">
+    <h2>✏️ פקודת UPDATE — תחביר</h2>
+    <p>פקודת UPDATE משנה ערכים בשורות <strong>קיימות</strong> בטבלה. לא יוצרת שורות חדשות — רק מעדכנת:</p>
+  </div>
+  <div class="code-block">
+    <div class="code-header"><div class="code-filename"><span class="dr"></span><span class="dy"></span><span class="dg"></span>&nbsp; SQL — מבנה UPDATE</div></div>
+    <div class="code-body"><pre><span class="sql-kw">UPDATE</span> users
+<span class="sql-kw">SET</span>    password = ?,
+       email    = ?,
+       phone    = ?
+<span class="sql-kw">WHERE</span>  username = ?</pre></div>
+  </div>
+  <div class="annotated-line">
+    <code>UPDATE users</code>
+    <div class="desc"><strong>שם הטבלה</strong> שרוצים לעדכן.</div>
+  </div>
+  <div class="annotated-line blue">
+    <code>SET password = ?, email = ?, phone = ?</code>
+    <div class="desc"><strong>אילו עמודות</strong> לעדכן ולמה. עמודות שלא מוזכרות — נשארות ללא שינוי.</div>
+  </div>
+  <div class="annotated-line red">
+    <code>WHERE username = ?</code>
+    <div class="desc"><strong>קריטי!</strong> מגדיר אילו שורות לעדכן. בלי WHERE — <strong>כל השורות בטבלה יתעדכנו!</strong></div>
+  </div>
+  <div class="card danger-card">
+    <h2>⚠️ WHERE — כלל ברזל</h2>
+    <div class="before-after">
+      <div>
+        <div class="ba-label red">❌ בלי WHERE — אסון!</div>
+        <div class="code-block">
+          <div class="code-body"><pre><span class="sql-kw">UPDATE</span> users
+<span class="sql-kw">SET</span> password = <span class="str">'abc'</span>
+
+<span class="comment">-- כל המשתמשים מקבלים</span>
+<span class="comment">-- את אותה סיסמה!</span>
+<span class="comment">-- אין דרך לבטל!</span></pre></div>
+        </div>
+      </div>
+      <div>
+        <div class="ba-label green">✅ עם WHERE — בטוח</div>
+        <div class="code-block">
+          <div class="code-body"><pre><span class="sql-kw">UPDATE</span> users
+<span class="sql-kw">SET</span> password = <span class="str">'abc'</span>
+<span class="sql-kw">WHERE</span> username = <span class="str">'alice'</span>
+
+<span class="comment">-- רק alice מתעדכנת</span>
+<span class="comment">-- שאר המשתמשים</span>
+<span class="comment">-- לא נפגעים</span></pre></div>
+        </div>
+      </div>
+    </div>
+    <div class="callout red">
+      <span class="icon">🚨</span>
+      <div class="body"><strong>כלל ברזל:</strong> UPDATE ו-DELETE <strong>תמיד</strong> עם WHERE. לפני הרצה — שאלו: "על אילו שורות זה ישפיע?"</div>
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-secondary" onclick="changeSlide(-1)">← הקודם</button>
+    <span class="slide-num">שלב 2 מתוך 8</span>
+    <button class="btn btn-primary" onclick="changeSlide(1)">הבא ←</button>
+  </div>
+</div>
+
+<!-- ══════ SLIDE 3 ══════ -->
+<div class="slide" id="slide-3">
+  <div class="card purple">
+    <h2>🔄 route ה-/update — GET ו-POST</h2>
+    <p>דף העדכון פועל בשני שלבים — <strong>GET</strong> לטעינת הפרטים הנוכחיים, <strong>POST</strong> לשמירת השינויים:</p>
+  </div>
+  <div class="code-block">
+    <div class="code-header"><div class="code-filename"><span class="dr"></span><span class="dy"></span><span class="dg"></span>&nbsp; main.py — route /update</div></div>
+    <div class="code-body"><pre><span class="fn">@app.route</span>(<span class="str">'/update'</span>, methods=[<span class="str">'GET'</span>, <span class="str">'POST'</span>])
+<span class="kw">def</span> <span class="fn">update</span>():
+    <span class="kw">if</span> current_user == <span class="str">'Guest'</span>:
+        <span class="kw">return</span> <span class="fn">redirect</span>(<span class="fn">url_for</span>(<span class="str">'login'</span>))
+
+    <span class="kw">if</span> request.method == <span class="str">'GET'</span>:
+        conn = sqlite3.<span class="fn">connect</span>(<span class="str">'users.db'</span>)
+        c = conn.<span class="fn">cursor</span>()
+<span class="hl-line">        c.<span class="fn">execute</span>(<span class="str">"SELECT * FROM users WHERE username = ?"</span>, (current_user,))</span>
+<span class="hl-line">        user_details = c.<span class="fn">fetchone</span>()</span>
+        conn.<span class="fn">close</span>()
+<span class="hl-line">        <span class="kw">return</span> <span class="fn">render_template</span>(<span class="str">'update.html'</span>, user_details=user_details)</span>
+
+    <span class="kw">if</span> request.method == <span class="str">'POST'</span>:
+<span class="hl-blue">        new_password = request.form[<span class="str">'new_password'</span>]</span>
+<span class="hl-blue">        new_email    = request.form[<span class="str">'new_email'</span>]</span>
+<span class="hl-blue">        new_phone    = request.form[<span class="str">'new_phone'</span>]</span>
+        conn = sqlite3.<span class="fn">connect</span>(<span class="str">'users.db'</span>)
+        c = conn.<span class="fn">cursor</span>()
+<span class="hl-green">        c.<span class="fn">execute</span>(<span class="str">"""UPDATE users
+                      SET password=?, email=?, phone=?
+                      WHERE username=?"""</span>,
+                 (new_password, new_email, new_phone, current_user))</span>
+        conn.<span class="fn">commit</span>()
+        conn.<span class="fn">close</span>()
+        <span class="fn">flash</span>(<span class="str">"הפרטים עודכנו בהצלחה!"</span>, <span class="str">"success"</span>)
+        <span class="kw">return</span> <span class="fn">redirect</span>(<span class="fn">url_for</span>(<span class="str">'update'</span>))</pre></div>
+  </div>
+  <div class="card">
+    <h3>🔍 GET — טעינת הפרטים הנוכחיים</h3>
+    <div class="annotated-line">
+      <code>SELECT * WHERE username = current_user</code>
+      <div class="desc">שולפים את הפרטים הנוכחיים של המשתמש המחובר ושולחים לתבנית בשם <ic>user_details</ic>.</div>
+    </div>
+    <div class="annotated-line blue">
+      <code>render_template('update.html', user_details=...)</code>
+      <div class="desc">ה-tuple מגיע לתבנית. שם ניגש אליו עם <ic>user_details[0]</ic>, <ic>user_details[1]</ic> וכו׳.</div>
+    </div>
+    <h3>🔍 POST — שמירת השינויים</h3>
+    <div class="annotated-line green">
+      <code>UPDATE ... SET ... WHERE username = current_user</code>
+      <div class="desc">מעדכנים רק את השורה של המשתמש המחובר. <ic>current_user</ic> כ-WHERE מבטיח שמשתמש לא יכול לערוך אחרים.</div>
+    </div>
+    <div class="annotated-line green">
+      <code>redirect(url_for('update'))</code>
+      <div class="desc">אחרי שמירה — מפנים חזרה לאותו דף (GET) כדי לראות הפרטים המעודכנים. הודעת Flash תוצג.</div>
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-secondary" onclick="changeSlide(-1)">← הקודם</button>
+    <span class="slide-num">שלב 3 מתוך 8</span>
+    <button class="btn btn-primary" onclick="changeSlide(1)">הבא ←</button>
+  </div>
+</div>
+
+<!-- ══════ SLIDE 4 ══════ -->
+<div class="slide" id="slide-4">
+  <div class="card purple">
+    <h2>🎨 update.html — הקובץ המלא</h2>
+    <p>הטופס מציג את הפרטים הנוכחיים בשדות כך שהמשתמש יכול לשנות רק מה שרוצה:</p>
+  </div>
+  <div class="code-block">
+    <div class="code-header"><div class="code-filename"><span class="dr"></span><span class="dy"></span><span class="dg"></span>&nbsp; templates/update.html</div></div>
+    <div class="code-body"><pre><span class="jinja">{% extends "base.html" %}</span>
+
+<span class="jinja">{% block title %}</span> update <span class="jinja">{% endblock %}</span>
+
+<span class="jinja">{% block content %}</span>
+<span class="tag">&lt;h2&gt;</span>Update User Details<span class="tag">&lt;/h2&gt;</span>
+
+<span class="comment">&lt;!-- טופס א׳: עדכון --&gt;</span>
+<span class="tag">&lt;form</span> <span class="attr">action</span>=<span class="str">"/update"</span> <span class="attr">method</span>=<span class="str">"post"</span><span class="tag">&gt;</span>
+<span class="hl-line">  <span class="tag">&lt;label&gt;</span> <span class="tag">&lt;b&gt;</span> Username: <span class="jinja">{{ </span><span class="jinja-v">user_details[0]</span><span class="jinja"> }}</span> <span class="tag">&lt;/b&gt;</span> <span class="tag">&lt;/label&gt;&lt;br&gt;</span></span>
+
+<span class="hl-blue">  <span class="tag">&lt;label</span> <span class="attr">for</span>=<span class="str">"new_password"</span><span class="tag">&gt;</span>New Password: <span class="tag">&lt;/label&gt;</span>
+  <span class="tag">&lt;input</span> <span class="attr">type</span>=<span class="str">"text"</span> <span class="attr">name</span>=<span class="str">"new_password"</span> <span class="attr">value</span>= <span class="jinja">{{ </span><span class="jinja-v">user_details[1]</span><span class="jinja"> }}</span> <span class="tag">&gt;&lt;br&gt;</span></span>
+<span class="hl-blue">  <span class="tag">&lt;label</span> <span class="attr">for</span>=<span class="str">"new_email"</span><span class="tag">&gt;</span>New Email: <span class="tag">&lt;/label&gt;</span>
+  <span class="tag">&lt;input</span> <span class="attr">type</span>=<span class="str">"email"</span> <span class="attr">name</span>=<span class="str">"new_email"</span> <span class="attr">value</span>= <span class="jinja">{{ </span><span class="jinja-v">user_details[2]</span><span class="jinja"> }}</span> <span class="tag">&gt;&lt;br&gt;</span></span>
+<span class="hl-blue">  <span class="tag">&lt;label</span> <span class="attr">for</span>=<span class="str">"new_phone"</span><span class="tag">&gt;</span>New Phone: <span class="tag">&lt;/label&gt;</span>
+  <span class="tag">&lt;input</span> <span class="attr">type</span>=<span class="str">"text"</span> <span class="attr">name</span>=<span class="str">"new_phone"</span> <span class="attr">value</span>= <span class="jinja">{{ </span><span class="jinja-v">user_details[3]</span><span class="jinja"> }}</span><span class="tag">&gt;&lt;br&gt;&lt;br&gt;</span></span>
+
+  <span class="tag">&lt;input</span> <span class="attr">type</span>=<span class="str">"submit"</span> <span class="attr">value</span>=<span class="str">"Update Details"</span><span class="tag">&gt;</span>
+<span class="tag">&lt;/form&gt;</span>
+
+<span class="comment">&lt;!-- טופס ב׳: מחיקה — action שונה! --&gt;</span>
+<span class="hl-red"><span class="tag">&lt;form</span> <span class="attr">action</span>=<span class="str">"/delete"</span> <span class="attr">onclick</span>=<span class="str">"return performAction()"</span> <span class="attr">method</span>=<span class="str">"post"</span><span class="tag">&gt;</span>
+    <span class="tag">&lt;button</span> <span class="attr">type</span>=<span class="str">"submit"</span><span class="tag">&gt;</span>Delete Me!!<span class="tag">&lt;/button&gt;</span>
+<span class="tag">&lt;/form&gt;</span></span>
+
+<span class="tag">&lt;script&gt;</span>
+<span class="hl-warn">    <span class="kw">function</span> <span class="fn">performAction</span>() {
+        <span class="kw">return</span> window.<span class="fn">confirm</span>(<span class="str">"בטוח שרוצה למחוק את המשתמש שלך לצמיתות?"</span>);
+    }</span>
+<span class="tag">&lt;/script&gt;</span>
+<span class="jinja">{% endblock %}</span></pre></div>
+  </div>
+  <div class="card">
+    <h3>🔍 ניתוח התבנית</h3>
+    <div class="annotated-line">
+      <code>{{ user_details[0] }}</code>
+      <div class="desc">username מוצג ב-<ic>&lt;label&gt;</ic> בלבד — לא ב-<ic>&lt;input&gt;</ic>. הסיבה: username הוא PRIMARY KEY, לא ניתן לשינוי.</div>
+    </div>
+    <div class="annotated-line blue">
+      <code>value= {{ user_details[1] }}</code>
+      <div class="desc">ממלא את השדה עם הערך הנוכחי מה-DB. המשתמש רואה מה יש וכותב מעליו אם רוצה לשנות.</div>
+    </div>
+    <div class="annotated-line red">
+      <code>action="/delete"</code>
+      <div class="desc">הטופס השני שולח POST ל-<ic>/delete</ic> — שונה מהטופס הראשון שהולך ל-<ic>/update</ic>. שני טפסים נפרדים לחלוטין!</div>
+    </div>
+    <div class="annotated-line warn">
+      <code>onclick="return performAction()"</code>
+      <div class="desc">לפני שליחה — מריץ JavaScript. אם מחזיר <ic>false</ic> (לחצו "ביטול") — הטופס לא נשלח.</div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>👁️ כך נראה הדף בדפדפן</h3>
+    <div class="mock-browser">
+      <div class="mock-bar">
+        <div class="mock-dots"><span class="dr"></span><span class="dy"></span><span class="dg"></span></div>
+        <div class="mock-url">localhost:5000/update</div>
+      </div>
+      <div class="mock-body">
+        <h2>Update User Details</h2>
+        <span class="mock-label"><b>Username: alice</b></span>
+        <label class="mock-label">New Password:</label>
+        <input class="mock-input" value="pass123!" readonly>
+        <label class="mock-label">New Email:</label>
+        <input class="mock-input" value="alice@school.ac.il" readonly>
+        <label class="mock-label">New Phone:</label>
+        <input class="mock-input" value="050-1234567" readonly>
+        <button class="mock-btn-update">Update Details</button>
+        &nbsp;
+        <button class="mock-btn-delete">Delete Me!!</button>
+      </div>
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-secondary" onclick="changeSlide(-1)">← הקודם</button>
+    <span class="slide-num">שלב 4 מתוך 8</span>
+    <button class="btn btn-primary" onclick="changeSlide(1)">הבא ←</button>
+  </div>
+</div>
+
+<!-- ══════ SLIDE 5 ══════ -->
+<div class="slide" id="slide-5">
+  <div class="card purple">
+    <h2>🗑️ פקודת DELETE ו-route המחיקה</h2>
+    <p>DELETE מוחקת שורות מהטבלה. בפרויקט — משתמש יכול למחוק <strong>את עצמו בלבד</strong>:</p>
+  </div>
+  <div class="code-block">
+    <div class="code-header"><div class="code-filename"><span class="dr"></span><span class="dy"></span><span class="dg"></span>&nbsp; SQL — מבנה DELETE</div></div>
+    <div class="code-body"><pre><span class="sql-kw">DELETE FROM</span> users
+<span class="sql-kw">WHERE</span> username = ?
+
+<span class="comment">-- בלי WHERE: DELETE FROM users ← מוחק את כל הטבלה!</span></pre></div>
+  </div>
+  <div class="code-block">
+    <div class="code-header"><div class="code-filename"><span class="dr"></span><span class="dy"></span><span class="dg"></span>&nbsp; main.py — route /delete</div></div>
+    <div class="code-body"><pre><span class="fn">@app.route</span>(<span class="str">'/delete'</span>, methods=[<span class="str">'POST'</span>])
+<span class="kw">def</span> <span class="fn">delete</span>():
+    <span class="kw">global</span> current_user
+    <span class="kw">if</span> current_user == <span class="str">'Guest'</span>:
+        <span class="kw">return</span> <span class="fn">redirect</span>(<span class="fn">url_for</span>(<span class="str">'login'</span>))
+
+    conn = sqlite3.<span class="fn">connect</span>(<span class="str">'users.db'</span>)
+    c = conn.<span class="fn">cursor</span>()
+<span class="hl-red">    c.<span class="fn">execute</span>(<span class="str">"DELETE FROM users WHERE username = ?"</span>, (current_user,))</span>
+    conn.<span class="fn">commit</span>()
+    conn.<span class="fn">close</span>()
+
+<span class="hl-line">    current_user = <span class="str">'Guest'</span>     <span class="comment">← חובה לנתק אחרי מחיקה!</span></span>
+    <span class="fn">flash</span>(<span class="str">"המשתמש נמחק"</span>, <span class="str">"success"</span>)
+    <span class="kw">return</span> <span class="fn">redirect</span>(<span class="fn">url_for</span>(<span class="str">'home'</span>))</pre></div>
+  </div>
+  <div class="card">
+    <h3>🔍 ניתוח route המחיקה</h3>
+    <div class="annotated-line red">
+      <code>DELETE FROM users WHERE username = ?</code>
+      <div class="desc">מוחקים רק את השורה של המשתמש המחובר. ה-<ic>?</ic> ממולא ב-<ic>current_user</ic>.</div>
+    </div>
+    <div class="annotated-line">
+      <code>current_user = 'Guest'</code>
+      <div class="desc"><strong>חשוב מאוד!</strong> אחרי מחיקה — חייבים לנתק. אחרת current_user יחזיק שם שלא קיים ב-DB וכל פעולה תגרום שגיאה.</div>
+    </div>
+    <div class="annotated-line blue">
+      <code>methods=['POST']</code>
+      <div class="desc">מקבל POST בלבד — מונע מחיקה מקרית בגישה ישירה לכתובת /delete בדפדפן.</div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>📊 מה קורה לטבלה</h3>
+    <div class="before-after">
+      <div>
+        <div class="ba-label blue">לפני — alice מוחקת</div>
+        <div class="db-visual">
+          <table class="db-inner">
+            <tr><th>username</th><th>password</th><th>email</th></tr>
+            <tr><td class="col-pk">alice</td><td>pass123</td><td>alice@school</td></tr>
+            <tr><td class="col-pk">bob42</td><td>b0bpass</td><td>bob@email</td></tr>
+          </table>
+        </div>
+      </div>
+      <div>
+        <div class="ba-label red">אחרי — alice נמחקה</div>
+        <div class="db-visual">
+          <table class="db-inner">
+            <tr><th>username</th><th>password</th><th>email</th></tr>
+            <tr class="row-deleted"><td class="col-gone">alice</td><td class="col-gone">pass123</td><td class="col-gone">alice@school</td></tr>
+            <tr><td class="col-pk">bob42</td><td>b0bpass</td><td>bob@email</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="callout red">
+      <span class="icon">🚨</span>
+      <div class="body"><strong>מחיקה היא בלתי הפיכה!</strong> אין "סל מחזור" ב-SQLite. שורה שנמחקה — נמחקה לצמיתות.</div>
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-secondary" onclick="changeSlide(-1)">← הקודם</button>
+    <span class="slide-num">שלב 5 מתוך 8</span>
+    <button class="btn btn-primary" onclick="changeSlide(1)">הבא ←</button>
+  </div>
+</div>
+
+<!-- ══════ SLIDE 6 ══════ -->
+<div class="slide" id="slide-6">
+  <div class="card purple">
+    <h2>💬 window.confirm() — אישור מחיקה</h2>
+    <p>לפני מחיקה מוצג חלון אישור JavaScript. כך זה עובד:</p>
+  </div>
+  <div class="code-block">
+    <div class="code-header"><div class="code-filename"><span class="dr"></span><span class="dy"></span><span class="dg"></span>&nbsp; הקוד ב-update.html</div></div>
+    <div class="code-body"><pre><span class="tag">&lt;form</span> <span class="attr">action</span>=<span class="str">"/delete"</span>
+      <span class="attr">onclick</span>=<span class="str">"return performAction()"</span>
+      <span class="attr">method</span>=<span class="str">"post"</span><span class="tag">&gt;</span>
+    <span class="tag">&lt;button</span> <span class="attr">type</span>=<span class="str">"submit"</span><span class="tag">&gt;</span>Delete Me!!<span class="tag">&lt;/button&gt;</span>
+<span class="tag">&lt;/form&gt;</span>
+
+<span class="tag">&lt;script&gt;</span>
+    <span class="kw">function</span> <span class="fn">performAction</span>() {
+        <span class="kw">return</span> window.<span class="fn">confirm</span>(<span class="str">"בטוח שרוצה למחוק את המשתמש שלך לצמיתות?"</span>);
+    }
+<span class="tag">&lt;/script&gt;</span></pre></div>
+  </div>
+  <div class="card">
+    <h3>🔍 זרימת האישור</h3>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num red">1</div>
+        <div class="step-body">
+          <div class="step-title">לחיצה על "Delete Me!!"</div>
+          <div class="step-desc">ה-<ic>onclick</ic> על הטופס מופעל לפני שליחת הבקשה לשרת</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num red">2</div>
+        <div class="step-body">
+          <div class="step-title">performAction() רץ — חלון קופץ</div>
+          <div class="step-desc"><ic>window.confirm()</ic> פותח חלון בדפדפן עם כפתורי "אישור" ו-"ביטול"</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num green">3א</div>
+        <div class="step-body">
+          <div class="step-title">לחיצה "אישור" ← מחיקה</div>
+          <div class="step-desc"><ic>confirm()</ic> מחזיר <ic>true</ic> → הטופס נשלח → POST ל-/delete</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3ב</div>
+        <div class="step-body">
+          <div class="step-title">לחיצה "ביטול" ← כלום לא קורה</div>
+          <div class="step-desc"><ic>confirm()</ic> מחזיר <ic>false</ic> → הטופס <strong>לא נשלח</strong> → הכל נשאר</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>👁️ חלון האישור בדפדפן</h3>
+    <div class="mock-browser">
+      <div class="mock-bar">
+        <div class="mock-dots"><span class="dr"></span><span class="dy"></span><span class="dg"></span></div>
+        <div class="mock-url">localhost:5000/update</div>
+      </div>
+      <div class="mock-body" style="position:relative;min-height:130px;">
+        <div style="opacity:.25;">
+          <h2>Update User Details</h2>
+          <span class="mock-label"><b>Username: alice</b></span>
+        </div>
+        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#2a2d3a;border:2px solid var(--border);border-radius:10px;padding:1.2rem 1.5rem;min-width:260px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.6);">
+          <div style="font-size:.88rem;color:var(--text);margin-bottom:1rem;">בטוח שרוצה למחוק את המשתמש שלך לצמיתות?</div>
+          <div style="display:flex;gap:.6rem;justify-content:center;">
+            <button style="background:rgba(74,222,128,.15);color:var(--success);border:1px solid rgba(74,222,128,.3);padding:.35rem 1rem;border-radius:6px;font-size:.82rem;">אישור</button>
+            <button style="background:rgba(248,113,113,.15);color:var(--danger);border:1px solid rgba(248,113,113,.3);padding:.35rem 1rem;border-radius:6px;font-size:.82rem;">ביטול</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="callout purple">
+      <span class="icon">💡</span>
+      <div class="body"><strong>למה טופס נפרד לגמרי?</strong> הפרדת טופס העדכון מטופס המחיקה מונעת בלבול. כל טופס יש לו <ic>action</ic> משלו. JavaScript הוא שכבת הגנה נוספת.</div>
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-secondary" onclick="changeSlide(-1)">← הקודם</button>
+    <span class="slide-num">שלב 6 מתוך 8</span>
+    <button class="btn btn-primary" onclick="changeSlide(1)">הבא ←</button>
+  </div>
+</div>
+
+<!-- ══════ SLIDE 7 ══════ -->
+<div class="slide" id="slide-7">
+  <div class="card purple">
+    <h2>🔁 זרימה מלאה — עדכון ומחיקה</h2>
+    <p>נסכם את כל המסלולים האפשריים בדף /update:</p>
+  </div>
+  <div class="card">
+    <h3>✏️ מסלול עדכון</h3>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <div class="step-title">כניסה ל-/update (GET)</div>
+          <div class="step-desc">Flask שולף פרטים נוכחיים מה-DB ב-SELECT, שולח ל-update.html</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num blue">2</div>
+        <div class="step-body">
+          <div class="step-title">הטופס מוצג עם הפרטים הנוכחיים</div>
+          <div class="step-desc">Jinja2 ממלא <ic>value="{{ user_details[1] }}"</ic> וכו׳ — הפרטים גלויים בשדות</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num green">3</div>
+        <div class="step-body">
+          <div class="step-title">לחיצה על "Update Details" (POST)</div>
+          <div class="step-desc">Flask מקבל ערכים מ-request.form ומריץ UPDATE ... SET ... WHERE</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num green">4</div>
+        <div class="step-body">
+          <div class="step-title">Flash + redirect חזרה לדף</div>
+          <div class="step-desc">הפרטים מעודכנים ב-DB, הדף נטען מחדש עם הערכים החדשים</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card danger-card">
+    <h3>🗑️ מסלול מחיקה</h3>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num red">1</div>
+        <div class="step-body">
+          <div class="step-title">לחיצה על "Delete Me!!" — onclick מופעל</div>
+          <div class="step-desc">JavaScript רץ לפני שהבקשה יוצאת לשרת בכלל</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num red">2א</div>
+        <div class="step-body">
+          <div class="step-title">ביטול → כלום לא קורה</div>
+          <div class="step-desc">confirm() מחזיר false → הטופס לא נשלח → המשתמש נשאר בדף</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num red">2ב</div>
+        <div class="step-body">
+          <div class="step-title">אישור → POST ל-/delete</div>
+          <div class="step-desc">Flask מריץ DELETE WHERE, מאפס current_user ל-Guest, מפנה לדף הבית</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-secondary" onclick="changeSlide(-1)">← הקודם</button>
+    <span class="slide-num">שלב 7 מתוך 8</span>
+    <button class="btn btn-primary" onclick="changeSlide(1)">הבא ←</button>
+  </div>
+</div>
+
+<!-- ══════ SLIDE 8 ══════ -->
+<div class="slide" id="slide-8">
+  <div class="card purple">
+    <h2>🧩 בדקו את עצמכם!</h2>
+  </div>
+
+  <div class="card" id="q1-card">
+    <div class="quiz-q">שאלה 1 — מה יקרה אם נריץ <ic>UPDATE users SET password='abc'</ic> בלי WHERE?</div>
+    <div class="quiz-options">
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q1')">רק המשתמש המחובר יתעדכן</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,true,'q1')">כל המשתמשים בטבלה יקבלו סיסמה 'abc' — פעולה בלתי הפיכה!</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q1')">SQLite יזרוק שגיאה כי חסר WHERE</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q1')">כלום — צריך commit קודם</div>
+    </div>
+    <div class="quiz-feedback" id="q1-fb"></div>
+  </div>
+
+  <div class="card" id="q2-card">
+    <div class="quiz-q">שאלה 2 — למה route /update מגדיר <ic>methods=['GET','POST']</ic> ואילו /delete רק <ic>methods=['POST']</ic>?</div>
+    <div class="quiz-options">
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q2')">DELETE לא עובד עם GET</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,true,'q2')">/update צריך GET לטעינת הטופס ו-POST לשמירה. /delete לא מציג דף — POST בלבד מונע מחיקה מקרית בגישה ישירה לכתובת</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q2')">הגדרה טכנית בלבד, אין הבדל מעשי</div>
+    </div>
+    <div class="quiz-feedback" id="q2-fb"></div>
+  </div>
+
+  <div class="card" id="q3-card">
+    <div class="quiz-q">שאלה 3 — למה username מוצג ב-<ic>&lt;label&gt;</ic> ולא ב-<ic>&lt;input&gt;</ic>?</div>
+    <div class="quiz-options">
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q3')">Jinja2 לא יכול לשים ערך ב-input</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,true,'q3')">username הוא PRIMARY KEY — לא ניתן לשינוי. label מדגיש שהוא קריאה בלבד</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q3')">label נראה יפה יותר</div>
+    </div>
+    <div class="quiz-feedback" id="q3-fb"></div>
+  </div>
+
+  <div class="card" id="q4-card">
+    <div class="quiz-q">שאלה 4 — מה קורה כשלוחצים "ביטול" ב-window.confirm()?</div>
+    <div class="quiz-options">
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q4')">נשלח POST ל-/delete בכל מקרה</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q4')">מופיעה הודעת Flash מ-Flask</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,true,'q4')">confirm() מחזיר false → onclick מחזיר false → הטופס לא נשלח בכלל</div>
+    </div>
+    <div class="quiz-feedback" id="q4-fb"></div>
+  </div>
+
+  <div class="card" id="q5-card">
+    <div class="quiz-q">שאלה 5 — מדוע כותבים <ic>current_user = 'Guest'</ic> אחרי המחיקה?</div>
+    <div class="quiz-options">
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q5')">כדי לפנות זיכרון</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q5')">Flask דורש זאת לפני redirect</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,true,'q5')">המשתמש לא קיים יותר ב-DB. בלי איפוס — current_user יכיל שם שנמחק וכל SELECT/UPDATE עליו יגרום שגיאות</div>
+    </div>
+    <div class="quiz-feedback" id="q5-fb"></div>
+  </div>
+
+  <div class="card success-card">
+    <h2>🏁 סיכום — CRUD מושלם!</h2>
+    <ul class="checklist">
+      <li><ic>UPDATE users SET col=? WHERE username=?</ic> — עדכון שורה קיימת</li>
+      <li><ic>DELETE FROM users WHERE username=?</ic> — מחיקת שורה</li>
+      <li><strong>WHERE תמיד!</strong> — בלעדיו UPDATE/DELETE פועלים על כל הטבלה</li>
+      <li>route /update: GET = טעינת פרטים, POST = שמירת שינויים</li>
+      <li>username ב-label בלבד — PRIMARY KEY לא ניתן לשינוי</li>
+      <li>route /delete: <ic>methods=['POST']</ic> בלבד</li>
+      <li>אחרי מחיקה — <ic>current_user = 'Guest'</ic> מיד!</li>
+      <li><ic>window.confirm()</ic> — הגנה ב-JS לפני פעולות הרסניות</li>
+    </ul>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-secondary" onclick="changeSlide(-1)">← הקודם</button>
+    <span class="slide-num">שלב 8 מתוך 8</span>
+    <button class="btn btn-primary" disabled>✓ סיום</button>
+  </div>
+</div>
+
+</div><!-- end .container -->
+
+<script>
+const TOTAL = 8;
+let current = 1;
+const quizAnswered = {};
+
+const feedbacks = {
+  q1: {
+    correct: '✓ נכון! UPDATE ללא WHERE פועל על כל השורות — כל המשתמשים יקבלו את אותה סיסמה ואין דרך לבטל.',
+    wrong:   '✗ לא מדויק. SQL לא ידע לאיזו שורה להתייחס. הפקודה תפעל על כל השורות — אחד הבאגים ההרסניים הנפוצים.'
+  },
+  q2: {
+    correct: '✓ בדיוק! /update צריך GET לטעינת הטופס ו-POST לשמירה. /delete לא מציג דף — POST בלבד מגן מפני גישה ישירה.',
+    wrong:   '✗ לא מדויק. /update צריך שני methods. /delete לא מציג כלום ולכן POST בלבד — מונע מחיקה בגישה ישירה.'
+  },
+  q3: {
+    correct: '✓ נכון! username הוא PRIMARY KEY — אי אפשר לשנות אותו. label מדגיש שהוא קריאה בלבד.',
+    wrong:   '✗ לא מדויק. username הוא PRIMARY KEY. שינויו עלול לגרום בעיות חמורות.'
+  },
+  q4: {
+    correct: '✓ מצוין! confirm() מחזיר false → onclick מחזיר false → הטופס לא נשלח בכלל. הכל קורה בדפדפן.',
+    wrong:   '✗ לא מדויק. confirm() + return false = הטופס לא נשלח. הכל קורה בדפדפן לפני שהבקשה יוצאת.'
+  },
+  q5: {
+    correct: '✓ נכון! בלי האיפוס current_user יכיל שם שנמחק. כל פעולה שתחפש אותו ב-DB תחזיר None ותגרום שגיאה.',
+    wrong:   '✗ לא מדויק. בלי האיפוס — current_user ממשיך להחזיק שם שנמחק מה-DB וגורם שגיאות.'
+  }
+};
+
+function initDots() {
+  const c = document.getElementById('navDots');
+  for (let i = 1; i <= TOTAL; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 1 ? ' active' : '');
+    d.id = 'dot-' + i;
+    d.addEventListener('click', (function(n){ return function(){ goTo(n); }; })(i));
+    c.appendChild(d);
+  }
+}
+
+function goTo(n) {
+  if (n < 1 || n > TOTAL) return;
+  document.getElementById('slide-' + current).classList.remove('active');
+  const oldDot = document.getElementById('dot-' + current);
+  oldDot.classList.remove('active');
+  if (current < n) oldDot.classList.add('completed');
+  current = n;
+  document.getElementById('slide-' + current).classList.add('active');
+  document.getElementById('dot-' + current).classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  updateUI();
+}
+
+function changeSlide(dir) {
+  goTo(current + dir);
+}
+
+function updateUI() {
+  const pct = ((current - 1) / (TOTAL - 1)) * 100;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressText').textContent = 'שלב ' + current + ' מתוך ' + TOTAL;
+  document.getElementById('prevBtn').disabled = (current === 1);
+  document.getElementById('nextBtn').textContent = (current === TOTAL) ? '✓ סיום' : 'הבא ←';
+  document.getElementById('nextBtn').disabled = (current === TOTAL);
+  document.getElementById('slideNum').textContent = 'שלב ' + current + ' מתוך ' + TOTAL;
+}
+
+function checkQuiz(el, isCorrect, qid) {
+  if (quizAnswered[qid]) return;
+  quizAnswered[qid] = true;
+  el.classList.add(isCorrect ? 'correct' : 'wrong');
+  const fb = document.getElementById(qid + '-fb');
+  fb.classList.add('show', isCorrect ? 'correct' : 'wrong');
+  fb.textContent = isCorrect ? feedbacks[qid].correct : feedbacks[qid].wrong;
+  if (!isCorrect) {
+    el.parentElement.querySelectorAll('.quiz-opt').forEach(function(opt) {
+      if (opt.getAttribute('onclick') && opt.getAttribute('onclick').includes('true'))
+        opt.classList.add('correct');
+    });
+  }
+  document.querySelectorAll('#' + qid + '-card .quiz-opt').forEach(function(o) {
+    o.classList.add('locked');
+  });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  initDots();
+  updateUI();
+});
+</script>
+</body>
+</html>
