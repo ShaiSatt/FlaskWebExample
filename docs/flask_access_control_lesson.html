@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>לומדה: הגנה על דפים ב-Flask</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;600;700;900&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0f14;
+    --surface: #15171f;
+    --surface2: #1d2030;
+    --accent: #a78bfa;
+    --accent2: #38bdf8;
+    --success: #4ade80;
+    --danger: #f87171;
+    --warn: #fb923c;
+    --text: #e2e8f0;
+    --text-muted: #64748b;
+    --border: #232640;
+    --code-bg: #090a0f;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Heebo', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+
+  .hero {
+    background: linear-gradient(160deg, #130f20 0%, #0e0f14 60%);
+    border-bottom: 1px solid var(--border);
+    padding: 3rem 2rem 2.5rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -40%; left: 50%;
+    transform: translateX(-50%);
+    width: 700px; height: 400px;
+    background: radial-gradient(ellipse, rgba(167,139,250,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .badge {
+    display: inline-block;
+    background: rgba(167,139,250,0.12);
+    color: var(--accent);
+    border: 1px solid rgba(167,139,250,0.35);
+    border-radius: 999px;
+    padding: 0.3rem 1.1rem;
+    font-size: 0.8rem; font-weight: 600; letter-spacing: 0.05em;
+    margin-bottom: 1rem;
+  }
+  .hero h1 { font-size: clamp(2rem, 5vw, 3rem); font-weight: 900; line-height: 1.2; margin-bottom: 1rem; }
+  .hero h1 span { color: var(--accent); }
+  .hero p { color: var(--text-muted); font-size: 1.05rem; max-width: 540px; margin: 0 auto; }
+
+  .progress-container {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 1rem 2rem; display: flex; align-items: center; gap: 1rem;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .progress-bar { flex: 1; height: 5px; background: var(--border); border-radius: 999px; overflow: hidden; }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 999px; transition: width 0.5s ease; width: 0%;
+  }
+  .progress-text { font-size: 0.82rem; color: var(--text-muted); white-space: nowrap; }
+
+  .nav-dots { display: flex; justify-content: center; gap: 0.5rem; padding: 1.2rem; flex-wrap: wrap; }
+  .dot { width: 11px; height: 11px; border-radius: 50%; background: var(--border); cursor: pointer; transition: all 0.3s; }
+  .dot.active { background: var(--accent); transform: scale(1.35); }
+  .dot.completed { background: var(--accent2); }
+
+  .container { max-width: 880px; margin: 0 auto; padding: 0 1.5rem; }
+
+  .slide { display: none; animation: fadeIn 0.35s ease; }
+  .slide.active { display: block; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 2rem; margin-bottom: 1.5rem;
+  }
+  .card.purple {
+    border-color: rgba(167,139,250,0.4);
+    background: linear-gradient(135deg, rgba(167,139,250,0.05) 0%, var(--surface) 100%);
+  }
+  .card.sky {
+    border-color: rgba(56,189,248,0.4);
+    background: linear-gradient(135deg, rgba(56,189,248,0.05) 0%, var(--surface) 100%);
+  }
+  .card.danger-card {
+    border-color: rgba(248,113,113,0.35);
+    background: rgba(248,113,113,0.04);
+  }
+  .card.success-card {
+    border-color: rgba(74,222,128,0.35);
+    background: rgba(74,222,128,0.04);
+  }
+  .card h2 { font-size: 1.4rem; font-weight: 700; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.6rem; }
+  .card h3 { font-size: 1.05rem; font-weight: 600; margin: 1.2rem 0 0.6rem; color: var(--accent2); }
+  .card p { color: #94a3b8; margin-bottom: 0.7rem; }
+
+  .code-block {
+    background: var(--code-bg); border: 1px solid var(--border);
+    border-radius: 12px; overflow: hidden; margin: 1rem 0;
+    font-family: 'Fira Code', monospace;
+  }
+  .code-header {
+    background: var(--surface2); padding: 0.55rem 1rem;
+    display: flex; align-items: center; border-bottom: 1px solid var(--border);
+  }
+  .code-filename { font-size: 0.78rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.5rem; }
+  .dr { width:9px;height:9px;border-radius:50%;background:#ff5f57;display:inline-block; }
+  .dy { width:9px;height:9px;border-radius:50%;background:#febc2e;display:inline-block; }
+  .dg { width:9px;height:9px;border-radius:50%;background:#28c840;display:inline-block; }
+  .code-body {
+    padding: 1.1rem 1.3rem; overflow-x: auto;
+    font-size: 0.83rem; line-height: 1.9;
+    direction: ltr; text-align: left;
+  }
+  .code-body pre { white-space: pre; }
+
+  .kw  { color: #c792ea; }
+  .fn  { color: #82aaff; }
+  .str { color: #c3e88d; }
+  .comment { color: #546e7a; font-style: italic; }
+  .jinja { color: #ffcb6b; font-weight: 600; }
+  .jinja-var { color: #ff9cac; }
+  .tag { color: #89ddff; }
+  .attr { color: #c3e88d; }
+  .hl-line { background: rgba(167,139,250,0.1); display: block; margin: 0 -1.3rem; padding: 0 1.3rem; border-right: 3px solid var(--accent); }
+  .hl-green { background: rgba(74,222,128,0.08); display: block; margin: 0 -1.3rem; padding: 0 1.3rem; border-right: 3px solid var(--success); }
+  .hl-red { background: rgba(248,113,113,0.08); display: block; margin: 0 -1.3rem; padding: 0 1.3rem; border-right: 3px solid var(--danger); }
+
+  .annotated-line {
+    display: flex; align-items: flex-start; gap: 0.8rem;
+    margin: 0.6rem 0; padding: 0.7rem 0.9rem;
+    background: var(--surface2); border-radius: 8px;
+    border-right: 3px solid var(--accent); font-size: 0.9rem;
+  }
+  .annotated-line.blue  { border-color: var(--accent2); }
+  .annotated-line.green { border-color: var(--success); }
+  .annotated-line.red   { border-color: var(--danger); }
+  .annotated-line.warn  { border-color: var(--warn); }
+  .annotated-line code {
+    font-family: 'Fira Code', monospace; font-size: 0.81rem;
+    background: var(--code-bg); padding: 0.15rem 0.5rem;
+    border-radius: 5px; color: var(--accent); white-space: nowrap; flex-shrink: 0;
+  }
+  .annotated-line.blue code  { color: var(--accent2); }
+  .annotated-line.green code { color: var(--success); }
+  .annotated-line.red code   { color: var(--danger); }
+  .annotated-line.warn code  { color: var(--warn); }
+  .annotated-line .desc { color: #94a3b8; font-size: 0.88rem; }
+
+  .callout {
+    padding: 0.85rem 1rem; border-radius: 10px; margin: 0.9rem 0;
+    font-size: 0.9rem; display: flex; gap: 0.7rem; align-items: flex-start;
+  }
+  .callout.purple { background: rgba(167,139,250,0.07); border: 1px solid rgba(167,139,250,0.25); }
+  .callout.blue   { background: rgba(56,189,248,0.07);  border: 1px solid rgba(56,189,248,0.25); }
+  .callout.green  { background: rgba(74,222,128,0.07);  border: 1px solid rgba(74,222,128,0.25); }
+  .callout.red    { background: rgba(248,113,113,0.07); border: 1px solid rgba(248,113,113,0.25); }
+  .callout.warn   { background: rgba(251,146,60,0.07);  border: 1px solid rgba(251,146,60,0.25); }
+  .callout .icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 0.05rem; }
+  .callout .body { color: #94a3b8; }
+  .callout .body strong { color: var(--text); }
+
+  /* Simulator */
+  .simulator {
+    background: var(--code-bg); border: 1px solid var(--border);
+    border-radius: 12px; overflow: hidden; margin: 1rem 0;
+  }
+  .sim-bar {
+    background: var(--surface2); padding: 0.5rem 1rem;
+    display: flex; align-items: center; gap: 0.8rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .sim-dots { display: flex; gap: 5px; }
+  .sim-url {
+    flex: 1; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 6px; padding: 0.3rem 0.8rem;
+    font-size: 0.78rem; font-family: 'Fira Code', monospace; color: var(--text-muted);
+    transition: color 0.3s;
+  }
+  .sim-url.blocked { color: var(--danger); }
+  .sim-url.allowed { color: var(--success); }
+  .sim-body { background: #f4f4f4; min-height: 150px; }
+  .sim-site-header {
+    background: #333; color: white; padding: 10px 20px;
+    display: flex; align-items: center; justify-content: space-between; font-size: 0.82rem;
+  }
+  .sim-site-nav { display: flex; gap: 0.4rem; }
+  .sim-site-nav a {
+    color: white; text-decoration: none;
+    background: rgba(255,255,255,0.12); padding: 3px 9px; border-radius: 4px; font-size: 0.78rem;
+  }
+  .sim-content { padding: 16px 20px; font-size: 0.88rem; color: #333; min-height: 90px; }
+  .sim-content h2 { color: #222; font-size: 1rem; margin-bottom: 6px; }
+  .sim-content p { color: #555; font-size: 0.85rem; }
+  .sim-content.denied { background: #fff5f5; }
+  .sim-content.denied h2 { color: #c0392b; }
+  .sim-controls {
+    padding: 1rem; display: flex; gap: 0.7rem; flex-wrap: wrap;
+    border-top: 1px solid var(--border); background: var(--code-bg);
+  }
+  .sim-btn {
+    padding: 0.45rem 1rem; border-radius: 8px; border: none; cursor: pointer;
+    font-size: 0.83rem; font-family: 'Heebo', sans-serif; font-weight: 600; transition: all 0.2s;
+  }
+  .sim-btn.purple { background: rgba(167,139,250,0.15); color: var(--accent);  border: 1px solid rgba(167,139,250,0.3); }
+  .sim-btn.red    { background: rgba(248,113,113,0.15); color: var(--danger); border: 1px solid rgba(248,113,113,0.3); }
+  .sim-btn.green  { background: rgba(74,222,128,0.15);  color: var(--success); border: 1px solid rgba(74,222,128,0.3); }
+  .sim-btn:hover  { filter: brightness(1.2); transform: translateY(-1px); }
+  .sim-user-badge {
+    font-size: 0.75rem; font-family: 'Fira Code', monospace;
+    padding: 0.2rem 0.6rem; border-radius: 999px; border: 1px solid;
+    transition: all 0.3s;
+  }
+  .sim-user-badge.guest  { background: rgba(248,113,113,0.15); color: var(--danger); border-color: rgba(248,113,113,0.3); }
+  .sim-user-badge.logged { background: rgba(74,222,128,0.15);  color: var(--success); border-color: rgba(74,222,128,0.3); }
+  .sim-label { font-size: 0.77rem; color: var(--text-muted); width: 100%; }
+
+  /* Access table */
+  .access-table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.88rem; }
+  .access-table th { background: var(--surface2); padding: 0.7rem 1rem; text-align: right; font-weight: 600; color: var(--text-muted); font-size: 0.8rem; }
+  .access-table td { padding: 0.65rem 1rem; border-bottom: 1px solid var(--border); }
+  .access-table tr:last-child td { border-bottom: none; }
+  .access-table td:first-child { font-family: 'Fira Code', monospace; font-size: 0.82rem; color: var(--accent2); }
+  .pill {
+    display: inline-block; padding: 0.2rem 0.7rem; border-radius: 999px;
+    font-size: 0.75rem; font-weight: 700;
+  }
+  .pill.yes   { background: rgba(74,222,128,0.15);  color: var(--success); }
+  .pill.no    { background: rgba(248,113,113,0.15); color: var(--danger); }
+  .pill.warn  { background: rgba(251,146,60,0.15);  color: var(--warn); }
+
+  /* Before / after */
+  .before-after { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+  .ba-label { font-size: 0.82rem; font-weight: 700; margin-bottom: 0.5rem; padding: 0.35rem 0.8rem; border-radius: 6px; display: inline-block; }
+  .ba-label.red   { background: rgba(248,113,113,0.15); color: var(--danger); }
+  .ba-label.green { background: rgba(74,222,128,0.15);  color: var(--success); }
+
+  /* Checklist */
+  .checklist { list-style: none; }
+  .checklist li {
+    padding: 0.55rem 0; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 0.8rem; font-size: 0.93rem; color: #94a3b8;
+  }
+  .checklist li::before { content: '✓'; color: var(--accent); font-weight: 700; flex-shrink: 0; }
+
+  /* Quiz */
+  .quiz-q { font-size: 1rem; font-weight: 600; margin-bottom: 0.9rem; }
+  .quiz-options { display: flex; flex-direction: column; gap: 0.6rem; }
+  .quiz-opt {
+    background: var(--surface2); border: 2px solid var(--border);
+    border-radius: 10px; padding: 0.75rem 1.1rem; cursor: pointer;
+    transition: all 0.2s; font-size: 0.88rem;
+    direction: ltr; text-align: left; font-family: 'Fira Code', monospace;
+  }
+  .quiz-opt.rtl { direction: rtl; text-align: right; font-family: 'Heebo', sans-serif; font-size: 0.93rem; }
+  .quiz-opt:hover:not(.locked) { border-color: var(--accent); background: rgba(167,139,250,0.07); }
+  .quiz-opt.correct { border-color: var(--success); background: rgba(74,222,128,0.09); color: var(--success); }
+  .quiz-opt.wrong   { border-color: var(--danger);  background: rgba(248,113,113,0.09); color: var(--danger); }
+  .quiz-feedback { margin-top: 0.9rem; padding: 0.85rem; border-radius: 10px; display: none; font-size: 0.9rem; }
+  .quiz-feedback.show { display: block; }
+  .quiz-feedback.correct { background: rgba(74,222,128,0.09);  border: 1px solid rgba(74,222,128,0.3); color: var(--success); }
+  .quiz-feedback.wrong   { background: rgba(248,113,113,0.09); border: 1px solid rgba(248,113,113,0.3); color: var(--danger); }
+
+  ic { font-family: 'Fira Code', monospace; font-size: 0.86em; background: var(--surface2); padding: 0.1em 0.4em; border-radius: 4px; color: var(--accent); }
+  .hl  { color: var(--accent);  font-weight: 600; }
+  .hl2 { color: var(--accent2); font-weight: 600; }
+  .hlg { color: var(--success); font-weight: 600; }
+  .hlr { color: var(--danger);  font-weight: 600; }
+  .hlw { color: var(--warn);    font-weight: 600; }
+
+  .btn-row { display: flex; justify-content: space-between; align-items: center; padding: 2rem 0 3rem; gap: 1rem; }
+  .btn {
+    padding: 0.75rem 1.8rem; border-radius: 10px; border: none;
+    cursor: pointer; font-size: 0.95rem; font-family: 'Heebo', sans-serif;
+    font-weight: 600; transition: all 0.25s; display: flex; align-items: center; gap: 0.4rem;
+  }
+  .btn-primary { background: var(--accent); color: #0e0f14; }
+  .btn-primary:hover { filter: brightness(1.1); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(167,139,250,0.3); }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { background: var(--surface); }
+  .slide-num { color: var(--text-muted); font-size: 0.88rem; }
+
+  .completion { text-align: center; padding: 3rem 1rem; }
+  .completion .trophy { font-size: 4.5rem; margin-bottom: 1rem; }
+  .completion h2 { font-size: 1.9rem; font-weight: 900; margin-bottom: 0.5rem; color: var(--accent); }
+  .completion p { color: var(--text-muted); }
+
+  @media (max-width: 640px) {
+    .before-after { grid-template-columns: 1fr; }
+    .btn-row { flex-direction: column; }
+    .btn { width: 100%; justify-content: center; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="badge">🎓 לומדת Flask — תיכון מגידו</div>
+  <h1>הגנה על דפים ב-Flask<br><span>Access Control</span></h1>
+  <p>לומדים כיצד להגביל גישה לדפים — ולהבדיל בין מה שמשתמשים מחוברים רואים לבין אורחים</p>
+</div>
+
+<div class="progress-container">
+  <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+  <div class="progress-text" id="progressText">שלב 1 מתוך 8</div>
+</div>
+
+<div class="nav-dots" id="navDots"></div>
+
+<div class="container">
+
+<!-- ══════════════════════ SLIDE 1 ══════════════════════ -->
+<div class="slide active" id="slide-1">
+  <div class="card purple">
+    <h2>🔒 מה זו הגנה על דפים?</h2>
+    <p>לא כל דף באתר מיועד לכולם. בפרויקט שלנו, דף <span class="hl">Restricted</span> מיועד רק למשתמשים מחוברים. אורח שמנסה לגשת אליו — צריך לקבל דחייה.</p>
+    <p>זו אחת הדרישות הבסיסיות של כל אתר אמיתי: <span class="hl2">Authentication</span> — זיהוי מי המשתמש, ו-<span class="hl2">Authorization</span> — מה מותר לו לראות.</p>
+  </div>
+
+  <div class="card">
+    <h3>📋 מפת ההרשאות בפרויקט שלנו</h3>
+    <table class="access-table">
+      <tr>
+        <th>דף</th>
+        <th>אורח (Guest)</th>
+        <th>משתמש מחובר</th>
+      </tr>
+      <tr>
+        <td>/</td>
+        <td><span class="pill yes">✓ גישה</span></td>
+        <td><span class="pill yes">✓ גישה</span></td>
+      </tr>
+      <tr>
+        <td>/users</td>
+        <td><span class="pill yes">✓ גישה</span></td>
+        <td><span class="pill yes">✓ גישה</span></td>
+      </tr>
+      <tr>
+        <td>/login</td>
+        <td><span class="pill yes">✓ גישה</span></td>
+        <td><span class="pill warn">~ מיותר</span></td>
+      </tr>
+      <tr>
+        <td>/signup</td>
+        <td><span class="pill yes">✓ גישה</span></td>
+        <td><span class="pill warn">~ מיותר</span></td>
+      </tr>
+      <tr>
+        <td>/restricted</td>
+        <td><span class="pill no">✗ חסום</span></td>
+        <td><span class="pill yes">✓ גישה</span></td>
+      </tr>
+      <tr>
+        <td>/logout</td>
+        <td><span class="pill no">✗ לא רלוונטי</span></td>
+        <td><span class="pill yes">✓ גישה</span></td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="card sky">
+    <h3>💡 מה נלמד בלומדה זו?</h3>
+    <ul class="checklist">
+      <li>כיצד Flask מזהה אם המשתמש מחובר (current_user)</li>
+      <li>הגנה על route בשרת — Python ב-main.py</li>
+      <li>הגנה על תפריט — Jinja2 ב-base.html</li>
+      <li>ההבדל בין הסתרה ויזואלית לחסימה אמיתית</li>
+      <li>כיצד להפנות משתמש חסום לדף אחר</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 2 ══════════════════════ -->
+<div class="slide" id="slide-2">
+  <div class="card purple">
+    <h2>👤 כיצד Flask יודע מי המשתמש?</h2>
+    <p>בפרויקט שלנו משתמשים במשתנה גלובלי <ic>current_user</ic> שמאוחסן בשרת. הוא מתחיל כ-<span class="hlr">'Guest'</span> ומשתנה לשם המשתמש אחרי login מוצלח.</p>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header"><div class="code-filename"><span class="dr"></span><span class="dy"></span><span class="dg"></span>&nbsp; main.py — מחזור חיים של current_user</div></div>
+    <div class="code-body"><pre>app.secret_key = <span class="str">"megido_secret_key"</span>
+valid_users = []
+
+<span class="comment"># ── מצב התחלתי: אורח ──</span>
+<span class="hl-red">current_user = <span class="str">'Guest'</span></span>
+
+<span class="comment"># ── login מצליח: משתמש מחובר ──</span>
+<span class="kw">if</span> user <span class="kw">in</span> valid_users:
+<span class="hl-green">    current_user = user          <span class="comment"># כעת: "alice" / "bob" / ...</span></span>
+    <span class="fn">flash</span>(<span class="str">" !נכנסת בהצלחה"</span>, <span class="str">"success"</span>)
+    <span class="kw">return</span> <span class="fn">redirect</span>(<span class="fn">url_for</span>(<span class="str">'home'</span>))
+
+<span class="comment"># ── logout: חזרה לאורח ──</span>
+<span class="kw">def</span> <span class="fn">logout</span>():
+    <span class="kw">global</span> current_user
+<span class="hl-red">    current_user = <span class="str">'Guest'</span>      <span class="comment"># חזרה לברירת המחדל</span></span>
+    <span class="kw">return</span> <span class="fn">redirect</span>(<span class="fn">url_for</span>(<span class="str">'home'</span>))</pre></div>
+  </div>
+
+  <div class="card">
+    <h3>🔍 הבדיקה הפשוטה</h3>
+    <p>כדי לדעת אם מישהו מחובר, בודקים פשוט:</p>
+    <div class="code-block">
+      <div class="code-body"><pre><span class="comment"># מחובר?</span>
+<span class="hl-green"><span class="kw">if</span> current_user != <span class="str">'Guest'</span>:</span>
+    <span class="comment"># כן — מותר לגשת</span>
+
+<span class="comment"># אורח?</span>
+<span class="hl-red"><span class="kw">if</span> current_user == <span class="str">'Guest'</span>:</span>
+    <span class="comment"># לא — לחסום</span></pre></div>
+    </div>
+    <div class="callout warn">
+      <span class="icon">⚠️</span>
+      <div class="body"><strong>הערה:</strong> בפרויקטים מקצועיים משתמשים ב-Session של Flask במקום משתנה גלובלי. אך הלוגיקה זהה — בדיקת מצב ההתחברות לפני הצגת התוכן.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 3 ══════════════════════ -->
+<div class="slide" id="slide-3">
+  <div class="card purple">
+    <h2>🚧 הגנה על Route ב-main.py</h2>
+    <p>זוהי ההגנה <strong>האמיתית</strong> — נמצאת בשרת. גם אם מישהו יקליד את הכתובת ישירות — ייחסם.</p>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header"><div class="code-filename"><span class="dr"></span><span class="dy"></span><span class="dg"></span>&nbsp; main.py — הגנה על /restricted</div></div>
+    <div class="code-body"><pre><span class="fn">@app.route</span>(<span class="str">'/restricted'</span>)
+<span class="kw">def</span> <span class="fn">restricted</span>():
+<span class="hl-line">    <span class="kw">if</span> current_user != <span class="str">'Guest'</span>:</span>
+<span class="hl-green">        <span class="kw">return</span> <span class="fn">render_template</span>(<span class="str">'restricted.html'</span>, user=current_user)</span>
+<span class="hl-red">    <span class="kw">else</span>:
+        <span class="kw">return</span> <span class="str">'&lt;h1&gt; access denied &lt;/h1&gt;'</span></span></pre></div>
+  </div>
+
+  <div class="card">
+    <h2>🔍 ניתוח הקוד</h2>
+    <div class="annotated-line">
+      <code>if current_user != 'Guest'</code>
+      <div class="desc">הבדיקה: האם יש משתמש מחובר? כל שם שאינו 'Guest' מחובר.</div>
+    </div>
+    <div class="annotated-line green">
+      <code>return render_template(...)</code>
+      <div class="desc">מחובר → מציגים את דף restricted.html עם שמו ("You now have access!")</div>
+    </div>
+    <div class="annotated-line red">
+      <code>return '&lt;h1&gt; access denied &lt;/h1&gt;'</code>
+      <div class="desc">אורח → מחזירים HTML גולמי פשוט, ללא עיצוב ובלי base.html. הדף נראה "שבור" — זה מכוון!</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>🛠️ שיפור: redirect + Flash במקום HTML גולמי</h2>
+    <p>הגרסה הנוכחית מחזירה HTML גולמי לאורחים. גרסה טובה יותר תפנה אותם לדף login עם הודעה:</p>
+    <div class="before-after">
+      <div>
+        <div class="ba-label red">❌ גרסה נוכחית</div>
+        <div class="code-block">
+          <div class="code-body"><pre><span class="kw">else</span>:
+    <span class="kw">return</span> <span class="str">'&lt;h1&gt;access denied&lt;/h1&gt;'</span>
+    <span class="comment"># HTML גולמי — לא נחמד!</span></pre></div>
+        </div>
+      </div>
+      <div>
+        <div class="ba-label green">✅ גרסה משופרת</div>
+        <div class="code-block">
+          <div class="code-body"><pre><span class="kw">else</span>:
+    <span class="fn">flash</span>(<span class="str">"עליכם להתחבר תחילה"</span>, <span class="str">"error"</span>)
+    <span class="kw">return</span> <span class="fn">redirect</span>(<span class="fn">url_for</span>(<span class="str">'login'</span>))
+    <span class="comment"># הפניה + הודעת Flash!</span></pre></div>
+        </div>
+      </div>
+    </div>
+    <div class="callout green">
+      <span class="icon">✨</span>
+      <div class="body">הגרסה המשופרת מפנה לדף login ומציגה הודעת Flash — חוויה הרבה יותר טובה למשתמש.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 4 ══════════════════════ -->
+<div class="slide" id="slide-4">
+  <div class="card purple">
+    <h2>🧭 הסתרת פריטי תפריט ב-base.html</h2>
+    <p>הגנת השרת חוסמת גישה — אבל כדאי גם <span class="hl">להסתיר</span> מהתפריט קישורים שלא רלוונטיים. ב-base.html יש לוגיקת Jinja2 שמשנה את התפריט לפי מצב ההתחברות:</p>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header"><div class="code-filename"><span class="dr"></span><span class="dy"></span><span class="dg"></span>&nbsp; templates/base.html — תפריט דינמי</div></div>
+    <div class="code-body"><pre><span class="tag">&lt;nav&gt;&lt;ul&gt;</span>
+    <span class="comment">&lt;!-- תמיד מופיע —&gt;</span>
+    <span class="tag">&lt;li&gt;&lt;a</span> <span class="attr">href</span>=<span class="str">"/"</span><span class="tag">&gt;&lt;i</span> <span class="attr">class</span>=<span class="str">"fas fa-home"</span><span class="tag">&gt;&lt;/i&gt;</span> Home<span class="tag">&lt;/a&gt;&lt;/li&gt;</span>
+    <span class="tag">&lt;li&gt;&lt;a</span> <span class="attr">href</span>=<span class="str">"/users"</span><span class="tag">&gt;&lt;i</span> <span class="attr">class</span>=<span class="str">"fas fa-users"</span><span class="tag">&gt;&lt;/i&gt;</span> Users<span class="tag">&lt;/a&gt;&lt;/li&gt;</span>
+
+    <span class="comment">&lt;!-- הסתעפות לפי מצב התחברות —&gt;</span>
+<span class="hl-line">    <span class="jinja">{% if user == 'Guest' %}</span></span>
+        <span class="comment">&lt;!-- אורח רואה: Login + Signup --&gt;</span>
+<span class="hl-red">        <span class="tag">&lt;li&gt;&lt;a</span> <span class="attr">href</span>=<span class="str">"/login"</span><span class="tag">&gt;&lt;i</span> <span class="attr">class</span>=<span class="str">"fas fa-sign-in-alt"</span><span class="tag">&gt;&lt;/i&gt;</span> Login<span class="tag">&lt;/a&gt;&lt;/li&gt;</span>
+        <span class="tag">&lt;li&gt;&lt;a</span> <span class="attr">href</span>=<span class="str">"/signup"</span><span class="tag">&gt;&lt;i</span> <span class="attr">class</span>=<span class="str">"fas fa-user-plus"</span><span class="tag">&gt;&lt;/i&gt;</span> Signup<span class="tag">&lt;/a&gt;&lt;/li&gt;</span></span>
+<span class="hl-line">    <span class="jinja">{% else %}</span></span>
+        <span class="comment">&lt;!-- מחובר רואה: Restricted + Logout --&gt;</span>
+<span class="hl-green">        <span class="tag">&lt;li&gt;&lt;a</span> <span class="attr">href</span>=<span class="str">"/restricted"</span><span class="tag">&gt;&lt;i</span> <span class="attr">class</span>=<span class="str">"fas fa-user-secret"</span><span class="tag">&gt;&lt;/i&gt;</span> Restricted<span class="tag">&lt;/a&gt;&lt;/li&gt;</span>
+        <span class="tag">&lt;li&gt;&lt;a</span> <span class="attr">href</span>=<span class="str">"/logout"</span><span class="tag">&gt;&lt;i</span> <span class="attr">class</span>=<span class="str">"fas fa-sign-out-alt"</span><span class="tag">&gt;&lt;/i&gt;</span> Logout<span class="tag">&lt;/a&gt;&lt;/li&gt;</span></span>
+<span class="hl-line">    <span class="jinja">{% endif %}</span></span>
+<span class="tag">&lt;/ul&gt;&lt;/nav&gt;</span></pre></div>
+  </div>
+
+  <div class="card">
+    <h2>🔍 ניתוח הלוגיקה</h2>
+    <div class="annotated-line">
+      <code>{% if user == 'Guest' %}</code>
+      <div class="desc"><ic>user</ic> הוא הפרמטר שנשלח מ-main.py בכל קריאה ל-render_template. אם הוא 'Guest' — אורח.</div>
+    </div>
+    <div class="annotated-line red">
+      <code>Login + Signup</code>
+      <div class="desc">אורח לא מחובר — מציגים את האפשרות להתחבר או להירשם.</div>
+    </div>
+    <div class="annotated-line green">
+      <code>Restricted + Logout</code>
+      <div class="desc">משתמש מחובר — מציגים גישה לדף המוגן ואפשרות להתנתק.</div>
+    </div>
+    <div class="callout warn">
+      <span class="icon">⚠️</span>
+      <div class="body"><strong>חשוב להבין:</strong> הסתרה בתפריט היא <strong>לא הגנה</strong>! מישהו יכול להקליד ישירות <ic>/restricted</ic> בדפדפן. ההגנה האמיתית היא תמיד ב-main.py!</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 5 ══════════════════════ -->
+<div class="slide" id="slide-5">
+  <div class="card purple">
+    <h2>🆚 הסתרה לעומת חסימה</h2>
+    <p>ההבדל בין שני הסוגים הוא קריטי — שכבת ההגנה ב-Jinja2 היא רק קוסמטית!</p>
+  </div>
+
+  <div class="before-after">
+    <div>
+      <div class="ba-label red">👁️ הסתרה — Jinja2 / HTML</div>
+      <div class="code-block">
+        <div class="code-body"><pre><span class="comment">&lt;!-- base.html --&gt;</span>
+<span class="jinja">{% if user != 'Guest' %}</span>
+  <span class="tag">&lt;a</span> <span class="attr">href</span>=<span class="str">"/restricted"</span><span class="tag">&gt;</span>Restricted<span class="tag">&lt;/a&gt;</span>
+<span class="jinja">{% endif %}</span>
+
+<span class="comment"># האורח לא רואה את הלינק...</span>
+<span class="comment"># ...אבל יכול להקליד URL ישירות!</span></pre></div>
+      </div>
+      <div class="callout red" style="margin-top:0.5rem;">
+        <span class="icon">❌</span>
+        <div class="body">הסתרה <strong>בלבד</strong> = חסימה חלקית בלבד</div>
+      </div>
+    </div>
+    <div>
+      <div class="ba-label green">🔒 חסימה — Python / Server</div>
+      <div class="code-block">
+        <div class="code-body"><pre><span class="comment"># main.py</span>
+<span class="fn">@app.route</span>(<span class="str">'/restricted'</span>)
+<span class="kw">def</span> <span class="fn">restricted</span>():
+  <span class="kw">if</span> current_user != <span class="str">'Guest'</span>:
+    <span class="kw">return</span> <span class="fn">render_template</span>(...)
+  <span class="kw">else</span>:
+    <span class="kw">return</span> <span class="fn">redirect</span>(<span class="fn">url_for</span>(<span class="str">'login'</span>))
+
+<span class="comment"># גם URL ישיר — ייחסם!</span></pre></div>
+      </div>
+      <div class="callout green" style="margin-top:0.5rem;">
+        <span class="icon">✅</span>
+        <div class="body">חסימה <strong>בשרת</strong> = הגנה אמיתית</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card sky">
+    <h2>🔑 כלל ברזל</h2>
+    <p style="font-size:1.05rem; color: var(--text);">
+      <strong>תמיד נשתמש בשתי שכבות יחד:</strong>
+    </p>
+    <div class="annotated-line green" style="margin-top:0.8rem;">
+      <code>שכבה 1: Jinja2</code>
+      <div class="desc">מסתירה פריטים מהתפריט — שיפור חוויית משתמש (UX). האורח לא רואה דברים לא רלוונטיים.</div>
+    </div>
+    <div class="annotated-line blue">
+      <code>שכבה 2: Python</code>
+      <div class="desc">חוסמת גישה ישירה לדף — אבטחה אמיתית. גם אם מישהו יודע את ה-URL, ייחסם בשרת.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 6 ══════════════════════ -->
+<div class="slide" id="slide-6">
+  <div class="card purple">
+    <h2>🎮 סימולטור — ניסוי הרשאות</h2>
+    <p>נסו לנווט לדפים שונים — ראו כיצד ההגנה פועלת בשני המצבים:</p>
+  </div>
+
+  <div class="simulator">
+    <div class="sim-bar">
+      <div class="sim-dots"><span class="dr"></span><span class="dy"></span><span class="dg"></span></div>
+      <div class="sim-url" id="simUrl">http://localhost:5000/</div>
+      <div class="sim-user-badge guest" id="userBadge">current_user = 'Guest'</div>
+    </div>
+    <div class="sim-body">
+      <div class="sim-site-header">
+        <span id="simWelcome">Welcome Guest !</span>
+        <div class="sim-site-nav" id="simNav">
+          <a href="#">Home</a>
+          <a href="#">Users</a>
+          <a href="#" style="background:rgba(255,255,255,0.12)">Login</a>
+          <a href="#" style="background:rgba(255,255,255,0.12)">Signup</a>
+        </div>
+      </div>
+      <div class="sim-content" id="simContent">
+        <h2>🏠 Home Page</h2>
+        <p>This is the home page content.</p>
+      </div>
+    </div>
+    <div class="sim-controls">
+      <div class="sim-label">ניווט לדפים:</div>
+      <button class="sim-btn purple" id="btnHome">/ Home</button>
+      <button class="sim-btn purple" id="btnRestricted">/restricted ⚠️</button>
+      <button class="sim-btn purple" id="btnLogin">/login</button>
+      <div class="sim-label" style="margin-top:0.5rem;">שינוי מצב התחברות:</div>
+      <button class="sim-btn green" id="btnDoLogin">✓ login כ-"alice"</button>
+      <button class="sim-btn red" id="btnDoLogout">↩ logout</button>
+    </div>
+  </div>
+
+  <div class="card sky">
+    <h3>💡 מה לשים לב אליו בסימולטור</h3>
+    <p><span class="hl">לפני login:</span> לחצו על /restricted — תראו "access denied" ללא עיצוב.</p>
+    <p><span class="hlg">אחרי login:</span> התפריט משתנה (Restricted + Logout מופיעים), ו-/restricted מציג את הדף הרגיל.</p>
+    <p><span class="hl2">שימו לב:</span> ה-header מציג "Welcome alice!" — זה המשתנה <ic>{{ user }}</ic> ב-base.html.</p>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 7 ══════════════════════ -->
+<div class="slide" id="slide-7">
+  <div class="card purple">
+    <h2>🧩 בדקו את עצמכם!</h2>
+  </div>
+
+  <div class="card" id="q1-card">
+    <div class="quiz-q">שאלה 1 — אורח מקליד ישירות <ic>localhost:5000/restricted</ic> בדפדפן. מה יקרה בפרויקט הנוכחי?</div>
+    <div class="quiz-options">
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,false,'q1')">הדפדפן יחסום את הגישה לפני שה-request יגיע לשרת</div>
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,false,'q1')">הדף לא יטען כלל</div>
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,true,'q1')">Flask יחזיר את הטקסט הגולמי "access denied" — ללא עיצוב</div>
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,false,'q1')">הדף יוצג כרגיל כי הוא רק מוסתר בתפריט</div>
+    </div>
+    <div class="quiz-feedback" id="q1-fb"></div>
+  </div>
+
+  <div class="card" id="q2-card">
+    <div class="quiz-q">שאלה 2 — מדוע ההסתרה ב-Jinja2 לבדה אינה מספיקה?</div>
+    <div class="quiz-options">
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,false,'q2')">כי Jinja2 לא יכולה להסתיר אלמנטים מהדפדפן</div>
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,true,'q2')">כי ניתן לגשת לדף ישירות דרך ה-URL, גם אם הלינק מוסתר בתפריט</div>
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,false,'q2')">כי CSS יכול לגלות את הרכיבים המוסתרים</div>
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,false,'q2')">כי Flask לא מסתמך על Jinja2 לאבטחה</div>
+    </div>
+    <div class="quiz-feedback" id="q2-fb"></div>
+  </div>
+
+  <div class="card" id="q3-card">
+    <div class="quiz-q">שאלה 3 — מה יש להוסיף ל-main.py כדי שהגנה על /restricted תפנה לדף login עם הודעה?</div>
+    <div class="quiz-options">
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q3')">return render_template('login.html')</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,true,'q3')">flash("עליכם להתחבר תחילה", "error")<br>return redirect(url_for('login'))</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q3')">return redirect('/login')<br>flash("שגיאה")</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q3')">return url_for('login')</div>
+    </div>
+    <div class="quiz-feedback" id="q3-fb"></div>
+  </div>
+
+  <div class="card" id="q4-card">
+    <div class="quiz-q">שאלה 4 — ב-base.html, <ic>{% if user == 'Guest' %}</ic> מסתיר את Restricted מהתפריט. מהיכן מגיע הערך של <ic>user</ic>?</div>
+    <div class="quiz-options">
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,false,'q4')">ישירות מה-Session של Flask</div>
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,false,'q4')">ממשתנה גלובלי שbase.html ניגש אליו ישירות</div>
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,true,'q4')">מפרמטר שנשלח בכל קריאה ל-render_template — למשל render_template('home.html', user=current_user)</div>
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,false,'q4')">מהדפדפן דרך Cookies</div>
+    </div>
+    <div class="quiz-feedback" id="q4-fb"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 8 ══════════════════════ -->
+<div class="slide" id="slide-8">
+  <div class="completion">
+    <div class="trophy">🔐</div>
+    <h2>כל הכבוד! סיימתם את הלומדה</h2>
+    <p>למדתם כיצד לשלב שתי שכבות הגנה לאתר Flask מאובטח</p>
+  </div>
+
+  <div class="card purple">
+    <h2>📚 סיכום — מה למדנו</h2>
+    <ul class="checklist">
+      <li>current_user מתחיל כ-'Guest' ומשתנה לשם המשתמש אחרי login</li>
+      <li>הגנת שרת ב-main.py — if current_user != 'Guest' — חוסמת גישה אמיתית</li>
+      <li>הסתרת תפריט ב-base.html — {% if user == 'Guest' %} — משפרת UX בלבד</li>
+      <li>חסימה לבדה אינה מספיקה — תמיד שתי שכבות יחד</li>
+      <li>redirect + flash עדיפים על HTML גולמי כשחוסמים</li>
+    </ul>
+  </div>
+
+  <div class="card" style="border-color:rgba(167,139,250,0.4);background:rgba(167,139,250,0.04);">
+    <h2>🚀 משימת המשך</h2>
+    <p>פותחים את הפרויקט ומנסים:</p>
+    <br>
+    <p><strong>1.</strong> משנים את ה-else בפונקציית restricted() — במקום HTML גולמי, מפנים לדף login עם הודעת Flash</p>
+    <p><strong>2.</strong> מוסיפים הגנה על <ic>/users</ic> — רק משתמשים מחוברים יוכלו לראות את רשימת המשתמשים</p>
+    <p><strong>3.</strong> <strong>אתגר בונוס:</strong> מוסיפים דף חדש <ic>/admin</ic> שרק משתמש בשם <ic>"admin"</ic> יכול לגשת אליו — לא כל משתמש מחובר</p>
+  </div>
+</div>
+
+<!-- Navigation -->
+<div class="btn-row">
+  <button class="btn btn-secondary" id="prevBtn" disabled>← הקודם</button>
+  <span class="slide-num" id="slideNum">1 / 8</span>
+  <button class="btn btn-primary" id="nextBtn">הבא ←</button>
+</div>
+</div>
+
+<script>
+const TOTAL = 8;
+let current = 1;
+const quizAnswered = {};
+
+const feedbacks = {
+  q1: {
+    correct: '✓ נכון! ב-main.py הקוד מחזיר את המחרוזת הגולמית "<h1>access denied</h1>" — ללא עיצוב וללא base.html.',
+    wrong: '✗ לא מדויק. Flask מקבל את ה-request, בודק if current_user != "Guest" ומחזיר HTML גולמי לאורחים — ללא עיצוב.'
+  },
+  q2: {
+    correct: '✓ בדיוק! הסתרה בתפריט משפיעה רק על מה שנראה — כל אחד יכול להקליד URL ישירות בדפדפן. ההגנה האמיתית חייבת להיות בשרת.',
+    wrong: '✗ לא מדויק. הסתרה ב-Jinja2 היא ויזואלית בלבד — ה-URL עדיין נגיש. כל אחד יכול לנסות לגשת ל-/restricted ישירות.'
+  },
+  q3: {
+    correct: '✓ נכון! flash() חייבת לבוא לפני redirect(). Flash שומרת את ההודעה ב-Session, ואז redirect() מעביר לדף הבא שיציג אותה.',
+    wrong: '✗ לא מדויק. הסדר חשוב: קודם flash() (שומרת הודעה), אחר כך return redirect() (מעביר לדף הבא). redirect() לא יכול לבוא לפני flash()!'
+  },
+  q4: {
+    correct: '✓ מצוין! בכל route ב-main.py קוראים ל-render_template עם user=current_user. ה-user הזה זמין בתבנית ובכל base.html.',
+    wrong: '✗ לא מדויק. ה-user מגיע כפרמטר מ-render_template. בכל route כתוב render_template("...", user=current_user) — זה מה שמגיע ל-Jinja2.'
+  }
+};
+
+function initDots() {
+  const c = document.getElementById('navDots');
+  for (let i = 1; i <= TOTAL; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 1 ? ' active' : '');
+    d.id = 'dot-' + i;
+    c.appendChild(d);
+    d.addEventListener('click', (function(n){ return function(){ goTo(n); }; })(i));
+  }
+}
+
+function goTo(n) {
+  document.getElementById('slide-' + current).classList.remove('active');
+  document.getElementById('dot-' + current).classList.remove('active');
+  if (current < n) document.getElementById('dot-' + current).classList.add('completed');
+  current = n;
+  document.getElementById('slide-' + current).classList.add('active');
+  document.getElementById('dot-' + current).classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  updateUI();
+}
+
+function changeSlide(dir) {
+  const next = current + dir;
+  if (next < 1 || next > TOTAL) return;
+  goTo(next);
+}
+
+function updateUI() {
+  document.getElementById('prevBtn').disabled = current === 1;
+  document.getElementById('nextBtn').textContent = current === TOTAL ? '✓ סיום' : 'הבא ←';
+  document.getElementById('slideNum').textContent = current + ' / ' + TOTAL;
+  const pct = ((current - 1) / (TOTAL - 1)) * 100;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressText').textContent = 'שלב ' + current + ' מתוך ' + TOTAL;
+}
+
+function checkQuiz(el, isCorrect, qid) {
+  if (quizAnswered[qid]) return;
+  quizAnswered[qid] = true;
+  el.classList.add(isCorrect ? 'correct' : 'wrong');
+  const fb = document.getElementById(qid + '-fb');
+  fb.classList.add('show', isCorrect ? 'correct' : 'wrong');
+  fb.textContent = isCorrect ? feedbacks[qid].correct : feedbacks[qid].wrong;
+  if (!isCorrect) {
+    el.parentElement.querySelectorAll('.quiz-opt').forEach(function(opt) {
+      if (opt.getAttribute('onclick') && opt.getAttribute('onclick').includes('true')) {
+        opt.classList.add('correct');
+      }
+    });
+  }
+  document.querySelectorAll('#' + qid + '-card .quiz-opt').forEach(function(o) {
+    o.classList.add('locked');
+  });
+}
+
+// ── Simulator ──────────────────────────────────────────
+var simLoggedIn = false;
+
+function simRender(page) {
+  const url   = document.getElementById('simUrl');
+  const nav   = document.getElementById('simNav');
+  const badge = document.getElementById('userBadge');
+  const welcome = document.getElementById('simWelcome');
+  const content = document.getElementById('simContent');
+
+  const userName = simLoggedIn ? 'alice' : 'Guest';
+
+  url.className = 'sim-url';
+  badge.className = 'sim-user-badge ' + (simLoggedIn ? 'logged' : 'guest');
+  badge.textContent = "current_user = '" + userName + "'";
+  welcome.textContent = 'Welcome ' + userName + ' !';
+
+  // nav
+  if (simLoggedIn) {
+    nav.innerHTML = '<a href="#">Home</a><a href="#">Users</a><a href="#">Restricted</a><a href="#">Logout</a>';
+  } else {
+    nav.innerHTML = '<a href="#">Home</a><a href="#">Users</a><a href="#">Login</a><a href="#">Signup</a>';
+  }
+
+  if (page === 'home') {
+    url.textContent = 'http://localhost:5000/';
+    url.classList.add('allowed');
+    content.className = 'sim-content';
+    content.innerHTML = '<h2>🏠 Home Page</h2><p>This is the home page content.</p>';
+
+  } else if (page === 'restricted') {
+    url.textContent = 'http://localhost:5000/restricted';
+    if (simLoggedIn) {
+      url.classList.add('allowed');
+      content.className = 'sim-content';
+      content.innerHTML = '<h2>🔐 Restricted Page</h2><p>' + userName + ' You now have access to this page!</p>';
+    } else {
+      url.classList.add('blocked');
+      content.className = 'sim-content denied';
+      content.innerHTML = '<h2>⛔ access denied</h2><p style="color:#888;font-size:0.8rem;">HTML גולמי — ללא עיצוב ובלי base.html</p>';
+    }
+
+  } else if (page === 'login') {
+    url.textContent = 'http://localhost:5000/login';
+    url.classList.add('allowed');
+    content.className = 'sim-content';
+    content.innerHTML = '<h2>🔑 Login Page</h2><p>Username: <input style="border:1px solid #ccc;border-radius:4px;padding:2px 6px;font-size:0.82rem" placeholder="username" disabled></p>';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  initDots();
+  updateUI();
+  simRender('home');
+
+  document.getElementById('prevBtn').addEventListener('click', function() { changeSlide(-1); });
+  document.getElementById('nextBtn').addEventListener('click', function() { changeSlide(1); });
+
+  document.getElementById('btnHome').addEventListener('click', function() { simRender('home'); });
+  document.getElementById('btnRestricted').addEventListener('click', function() { simRender('restricted'); });
+  document.getElementById('btnLogin').addEventListener('click', function() { simRender('login'); });
+
+  document.getElementById('btnDoLogin').addEventListener('click', function() {
+    simLoggedIn = true;
+    simRender('home');
+  });
+  document.getElementById('btnDoLogout').addEventListener('click', function() {
+    simLoggedIn = false;
+    simRender('home');
+  });
+});
+</script>
+</body>
+</html>

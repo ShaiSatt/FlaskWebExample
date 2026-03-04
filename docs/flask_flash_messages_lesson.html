@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>לומדה: הודעות Flash ב-Flask</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;600;700;900&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f18;
+    --surface: #151828;
+    --surface2: #1e2235;
+    --accent: #f59e0b;
+    --accent2: #38bdf8;
+    --accent3: #f472b6;
+    --success: #4ade80;
+    --error: #f87171;
+    --text: #e2e8f0;
+    --text-muted: #64748b;
+    --border: #252a40;
+    --code-bg: #090b12;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Heebo', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+
+  /* Hero */
+  .hero {
+    background: linear-gradient(160deg, #1a1030 0%, #0d0f18 55%);
+    border-bottom: 1px solid var(--border);
+    padding: 3rem 2rem 2.5rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -30%; left: 50%;
+    transform: translateX(-50%);
+    width: 700px; height: 400px;
+    background: radial-gradient(ellipse, rgba(245,158,11,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .badge {
+    display: inline-block;
+    background: rgba(245,158,11,0.12);
+    color: var(--accent);
+    border: 1px solid rgba(245,158,11,0.35);
+    border-radius: 999px;
+    padding: 0.3rem 1.1rem;
+    font-size: 0.8rem; font-weight: 600; letter-spacing: 0.05em;
+    margin-bottom: 1rem;
+  }
+  .hero h1 {
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 900; line-height: 1.2; margin-bottom: 1rem;
+  }
+  .hero h1 span { color: var(--accent); }
+  .hero p { color: var(--text-muted); font-size: 1.05rem; max-width: 540px; margin: 0 auto; }
+
+  /* Progress */
+  .progress-container {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 1rem 2rem; display: flex; align-items: center; gap: 1rem;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .progress-bar { flex: 1; height: 5px; background: var(--border); border-radius: 999px; overflow: hidden; }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 999px; transition: width 0.5s ease; width: 0%;
+  }
+  .progress-text { font-size: 0.82rem; color: var(--text-muted); white-space: nowrap; }
+
+  /* Dots */
+  .nav-dots { display: flex; justify-content: center; gap: 0.5rem; padding: 1.2rem; flex-wrap: wrap; }
+  .dot { width: 11px; height: 11px; border-radius: 50%; background: var(--border); cursor: pointer; transition: all 0.3s; }
+  .dot.active { background: var(--accent); transform: scale(1.35); }
+  .dot.completed { background: var(--accent2); }
+
+  /* Layout */
+  .container { max-width: 880px; margin: 0 auto; padding: 0 1.5rem; }
+
+  .slide { display: none; animation: fadeIn 0.35s ease; }
+  .slide.active { display: block; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Cards */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 2rem; margin-bottom: 1.5rem;
+  }
+  .card.amber {
+    border-color: rgba(245,158,11,0.4);
+    background: linear-gradient(135deg, rgba(245,158,11,0.05) 0%, var(--surface) 100%);
+  }
+  .card.sky {
+    border-color: rgba(56,189,248,0.4);
+    background: linear-gradient(135deg, rgba(56,189,248,0.05) 0%, var(--surface) 100%);
+  }
+  .card.success-card {
+    border-color: rgba(74,222,128,0.35);
+    background: rgba(74,222,128,0.04);
+  }
+  .card.error-card {
+    border-color: rgba(248,113,113,0.35);
+    background: rgba(248,113,113,0.04);
+  }
+  .card h2 { font-size: 1.4rem; font-weight: 700; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.6rem; }
+  .card h3 { font-size: 1.05rem; font-weight: 600; margin: 1.2rem 0 0.6rem; color: var(--accent2); }
+  .card p { color: #94a3b8; margin-bottom: 0.7rem; }
+
+  /* Code */
+  .code-block {
+    background: var(--code-bg); border: 1px solid var(--border);
+    border-radius: 12px; overflow: hidden; margin: 1rem 0;
+    font-family: 'Fira Code', monospace;
+  }
+  .code-header {
+    background: var(--surface2); padding: 0.55rem 1rem;
+    display: flex; align-items: center; border-bottom: 1px solid var(--border);
+  }
+  .code-filename { font-size: 0.78rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.5rem; }
+  .dr { width:9px;height:9px;border-radius:50%;background:#ff5f57;display:inline-block; }
+  .dy { width:9px;height:9px;border-radius:50%;background:#febc2e;display:inline-block; }
+  .dg { width:9px;height:9px;border-radius:50%;background:#28c840;display:inline-block; }
+  .code-body {
+    padding: 1.1rem 1.3rem; overflow-x: auto;
+    font-size: 0.83rem; line-height: 1.9;
+    direction: ltr; text-align: left;
+  }
+  .code-body pre { white-space: pre; }
+
+  /* Syntax */
+  .kw { color: #c792ea; }
+  .fn { color: #82aaff; }
+  .str { color: #c3e88d; }
+  .num { color: #f78c6c; }
+  .comment { color: #546e7a; font-style: italic; }
+  .jinja { color: #ffcb6b; font-weight: 600; }
+  .jinja-var { color: #ff9cac; }
+  .tag { color: #89ddff; }
+  .attr { color: #c3e88d; }
+  .hl-line { background: rgba(245,158,11,0.1); display: block; margin: 0 -1.3rem; padding: 0 1.3rem; border-right: 3px solid var(--accent); }
+
+  /* Flash demo */
+  .flash-demo {
+    margin: 1.2rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+  }
+  .flash-msg {
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-align: center;
+    border: 2px solid;
+    width: 40%;
+    min-width: 220px;
+    margin: 0 auto;
+    position: relative;
+    cursor: default;
+  }
+  .flash-msg.success {
+    background-color: #d4edda; color: #155724;
+    border-color: #c3e6cb;
+  }
+  .flash-msg.error {
+    background-color: #f8d7da; color: #721c24;
+    border-color: #f5c6cb;
+  }
+  .flash-msg.animated {
+    animation: slideIn 0.4s ease;
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .flash-msg.fading {
+    transition: opacity 0.8s;
+    opacity: 0;
+  }
+  .flash-label {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    text-align: center;
+    margin-top: -0.3rem;
+    font-family: 'Fira Code', monospace;
+  }
+
+  /* Annotated */
+  .annotated-line {
+    display: flex; align-items: flex-start; gap: 0.8rem;
+    margin: 0.6rem 0; padding: 0.7rem 0.9rem;
+    background: var(--surface2); border-radius: 8px;
+    border-right: 3px solid var(--accent); font-size: 0.9rem;
+  }
+  .annotated-line.blue { border-color: var(--accent2); }
+  .annotated-line.green { border-color: var(--success); }
+  .annotated-line.red { border-color: var(--error); }
+  .annotated-line code {
+    font-family: 'Fira Code', monospace; font-size: 0.81rem;
+    background: var(--code-bg); padding: 0.15rem 0.5rem;
+    border-radius: 5px; color: var(--accent); white-space: nowrap; flex-shrink: 0;
+  }
+  .annotated-line.blue code { color: var(--accent2); }
+  .annotated-line.green code { color: var(--success); }
+  .annotated-line.red code { color: var(--error); }
+  .annotated-line .desc { color: #94a3b8; font-size: 0.88rem; }
+
+  /* Flow */
+  .flow {
+    display: flex; align-items: stretch; gap: 0; margin: 1.2rem 0;
+    border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
+  }
+  .flow-step {
+    flex: 1; padding: 1rem 0.8rem; text-align: center;
+    background: var(--surface2); border-left: 1px solid var(--border);
+    display: flex; flex-direction: column; align-items: center; gap: 0.4rem;
+  }
+  .flow-step:last-child { border-left: none; }
+  .flow-step .num {
+    width: 24px; height: 24px; border-radius: 50%;
+    background: var(--accent); color: #0d0f18;
+    font-size: 0.75rem; font-weight: 900;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .flow-step .title { font-size: 0.85rem; font-weight: 700; }
+  .flow-step .sub { font-size: 0.75rem; color: var(--text-muted); line-height: 1.3; }
+  .flow-step.accent { background: rgba(245,158,11,0.08); }
+
+  /* Two-col */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+  .col-label { font-size: 0.82rem; font-weight: 700; margin-bottom: 0.5rem; padding: 0.35rem 0.8rem; border-radius: 6px; display: inline-block; }
+  .col-label.green { background: rgba(74,222,128,0.15); color: var(--success); }
+  .col-label.red { background: rgba(248,113,113,0.15); color: var(--error); }
+  .col-label.amber { background: rgba(245,158,11,0.15); color: var(--accent); }
+
+  /* Callout */
+  .callout {
+    padding: 0.85rem 1rem; border-radius: 10px; margin: 0.9rem 0;
+    font-size: 0.9rem; display: flex; gap: 0.7rem; align-items: flex-start;
+  }
+  .callout.amber { background: rgba(245,158,11,0.07); border: 1px solid rgba(245,158,11,0.25); }
+  .callout.blue { background: rgba(56,189,248,0.07); border: 1px solid rgba(56,189,248,0.25); }
+  .callout.green { background: rgba(74,222,128,0.07); border: 1px solid rgba(74,222,128,0.25); }
+  .callout .icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 0.05rem; }
+  .callout .body { color: #94a3b8; }
+  .callout .body strong { color: var(--text); }
+
+  /* Checklist */
+  .checklist { list-style: none; }
+  .checklist li {
+    padding: 0.55rem 0; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 0.8rem; font-size: 0.93rem;
+  }
+  .checklist li::before { content: '✓'; color: var(--accent); font-weight: 700; }
+
+  /* Quiz */
+  .quiz-q { font-size: 1rem; font-weight: 600; margin-bottom: 0.9rem; }
+  .quiz-options { display: flex; flex-direction: column; gap: 0.6rem; }
+  .quiz-opt {
+    background: var(--surface2); border: 2px solid var(--border);
+    border-radius: 10px; padding: 0.75rem 1.1rem; cursor: pointer;
+    transition: all 0.2s; font-size: 0.88rem;
+    direction: ltr; text-align: left; font-family: 'Fira Code', monospace;
+  }
+  .quiz-opt.rtl { direction: rtl; text-align: right; font-family: 'Heebo', sans-serif; font-size: 0.93rem; }
+  .quiz-opt:hover:not(.locked) { border-color: var(--accent2); background: rgba(56,189,248,0.07); }
+  .quiz-opt.correct { border-color: var(--success); background: rgba(74,222,128,0.09); color: var(--success); }
+  .quiz-opt.wrong { border-color: var(--error); background: rgba(248,113,113,0.09); color: var(--error); }
+  .quiz-feedback { margin-top: 0.9rem; padding: 0.85rem; border-radius: 10px; display: none; font-size: 0.9rem; }
+  .quiz-feedback.show { display: block; }
+  .quiz-feedback.correct { background: rgba(74,222,128,0.09); border: 1px solid rgba(74,222,128,0.3); color: var(--success); }
+  .quiz-feedback.wrong { background: rgba(248,113,113,0.09); border: 1px solid rgba(248,113,113,0.3); color: var(--error); }
+
+  ic { font-family: 'Fira Code', monospace; font-size: 0.86em; background: var(--surface2); padding: 0.1em 0.4em; border-radius: 4px; color: var(--accent); }
+  .hl { color: var(--accent); font-weight: 600; }
+  .hl2 { color: var(--accent2); font-weight: 600; }
+  .hlg { color: var(--success); font-weight: 600; }
+  .hlr { color: var(--error); font-weight: 600; }
+
+  /* Simulator */
+  .simulator {
+    background: var(--code-bg); border: 1px solid var(--border);
+    border-radius: 12px; overflow: hidden; margin: 1rem 0;
+  }
+  .sim-bar {
+    background: var(--surface2); padding: 0.5rem 1rem;
+    display: flex; align-items: center; gap: 0.8rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .sim-dots { display: flex; gap: 5px; }
+  .sim-url { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 0.3rem 0.8rem; font-size: 0.78rem; font-family: 'Fira Code', monospace; color: var(--text-muted); }
+  .sim-body { padding: 0; min-height: 160px; }
+  .sim-header { background: #333; color: white; padding: 10px 20px; display: flex; align-items: center; gap: 1rem; font-size: 0.85rem; }
+  .sim-nav { display: flex; gap: 0.5rem; font-size: 0.8rem; }
+  .sim-nav a { color: white; text-decoration: none; background: rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 4px; }
+  .sim-flash-area { min-height: 48px; }
+  .sim-flash {
+    width: 40%; margin: 12px auto; padding: 10px 14px;
+    border-radius: 8px; font-size: 0.85rem; font-weight: 600;
+    text-align: center; border: 2px solid; display: none;
+  }
+  .sim-flash.success { background: #d4edda; color: #155724; border-color: #c3e6cb; }
+  .sim-flash.error { background: #f8d7da; color: #721c24; border-color: #f5c6cb; }
+  .sim-main { padding: 16px 20px; font-size: 0.88rem; color: #555; }
+  .sim-main h2 { color: #333; font-size: 1rem; margin-bottom: 8px; }
+  .sim-controls { padding: 1rem; display: flex; gap: 0.7rem; flex-wrap: wrap; border-top: 1px solid var(--border); }
+  .sim-btn {
+    padding: 0.5rem 1.1rem; border-radius: 8px; border: none; cursor: pointer;
+    font-size: 0.85rem; font-family: 'Heebo', sans-serif; font-weight: 600;
+    transition: all 0.2s;
+  }
+  .sim-btn.green { background: rgba(74,222,128,0.15); color: var(--success); border: 1px solid rgba(74,222,128,0.3); }
+  .sim-btn.red { background: rgba(248,113,113,0.15); color: var(--error); border: 1px solid rgba(248,113,113,0.3); }
+  .sim-btn.amber { background: rgba(245,158,11,0.15); color: var(--accent); border: 1px solid rgba(245,158,11,0.3); }
+  .sim-btn:hover { filter: brightness(1.2); transform: translateY(-1px); }
+  .sim-label { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.3rem; }
+
+  /* Buttons */
+  .btn-row { display: flex; justify-content: space-between; align-items: center; padding: 2rem 0 3rem; gap: 1rem; }
+  .btn {
+    padding: 0.75rem 1.8rem; border-radius: 10px; border: none;
+    cursor: pointer; font-size: 0.95rem; font-family: 'Heebo', sans-serif;
+    font-weight: 600; transition: all 0.25s; display: flex; align-items: center; gap: 0.4rem;
+  }
+  .btn-primary { background: var(--accent); color: #0d0f18; }
+  .btn-primary:hover { filter: brightness(1.1); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(245,158,11,0.3); }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { background: var(--surface); }
+  .slide-num { color: var(--text-muted); font-size: 0.88rem; }
+
+  .completion { text-align: center; padding: 3rem 1rem; }
+  .completion .trophy { font-size: 4.5rem; margin-bottom: 1rem; }
+  .completion h2 { font-size: 1.9rem; font-weight: 900; margin-bottom: 0.5rem; color: var(--accent); }
+  .completion p { color: var(--text-muted); }
+
+  @media (max-width: 640px) {
+    .two-col { grid-template-columns: 1fr; }
+    .btn-row { flex-direction: column; }
+    .btn { width: 100%; justify-content: center; }
+    .sim-flash { width: 80%; }
+    .flow { flex-direction: column; }
+    .flow-step { border-left: none; border-top: 1px solid var(--border); }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="badge">🎓 לומדת Flask — תיכון מגידו</div>
+  <h1>הודעות זמניות ב-Flask<br><span>Flash Messages</span></h1>
+  <p>לומדים כיצד להציג הודעות חכמות למשתמשים — הצלחה, שגיאה, אזהרה — שנעלמות מעצמן</p>
+</div>
+
+<div class="progress-container">
+  <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+  <div class="progress-text" id="progressText">שלב 1 מתוך 7</div>
+</div>
+
+<div class="nav-dots" id="navDots"></div>
+
+<div class="container">
+
+<!-- ══════════════════════ SLIDE 1 ══════════════════════ -->
+<div class="slide active" id="slide-1">
+  <div class="card amber">
+    <h2>💬 מה זו הודעת Flash?</h2>
+    <p>כשמשתמשים מתחברים לאתר, נרשמים, או עושים פעולה כלשהי — הם מצפים לקבל תגובה. Flash היא הודעה חד-פעמית שמוצגת בדף הבא ואז <strong>נעלמת לנצח</strong>.</p>
+  </div>
+
+  <div class="card">
+    <h3>⚡ דוגמאות מהפרויקט שלנו</h3>
+    <div class="flash-demo">
+      <div class="flash-msg success animated">!נכנסת בהצלחה ✓</div>
+      <div class="flash-label">flash(" !נכנסת בהצלחה", "success")</div>
+    </div>
+    <div class="flash-demo">
+      <div class="flash-msg error animated" style="animation-delay:0.2s">משתמש לא קיים johndoe ✗</div>
+      <div class="flash-label">flash(f"משתמש לא קיים {user}", "error")</div>
+    </div>
+    <div class="flash-demo">
+      <div class="flash-msg success animated" style="animation-delay:0.4s">!alice נרשמת בהצלחה ✓</div>
+      <div class="flash-label">flash(f"{username} נרשמת בהצלחה", "success")</div>
+    </div>
+  </div>
+
+  <div class="card sky">
+    <h3>🔑 למה "Flash"?</h3>
+    <p>כמו הבזק של מצלמה — מאיר לרגע ונעלם. ההודעה נשמרת ב-<span class="hl">Session</span> (זיכרון הצד-שרת) ומוצגת <strong>פעם אחת בלבד</strong>. ברגע שהדפדפן קרא אותה — היא נמחקת.</p>
+    <div class="callout amber">
+      <span class="icon">⚠️</span>
+      <div class="body"><strong>בלי Flash:</strong> אחרי redirect, כל המשתנים של הפונקציה נמחקים. לא ניתן לשלוח מידע לדף הבא ישירות — Flash פותרת בדיוק את הבעיה הזו!</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>💡 מה נלמד בלומדה זו?</h3>
+    <ul class="checklist">
+      <li>כיצד שולחים הודעת Flash מ-Python עם flash()</li>
+      <li>כיצד מציגים הודעות Flash ב-base.html</li>
+      <li>ההבדל בין קטגוריה "success" ל-"error"</li>
+      <li>כיצד CSS מעצב כל קטגוריה בנפרד</li>
+      <li>הקוד JavaScript שגורם להודעה להיעלם אחרי 3 שניות</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 2 ══════════════════════ -->
+<div class="slide" id="slide-2">
+  <div class="card amber">
+    <h2>🐍 שליחת Flash מ-main.py</h2>
+    <p>שלב ראשון: שולחים הודעה מ-Python. הפונקציה <ic>flash()</ic> מקבלת שני פרמטרים:</p>
+  </div>
+
+  <div class="card">
+    <div class="annotated-line">
+      <code>flash("הטקסט", "קטגוריה")</code>
+      <div class="desc"><strong>הטקסט</strong> — מה שיוצג למשתמש. יכול להכיל משתנים עם f-string.</div>
+    </div>
+    <div class="annotated-line blue">
+      <code>"success"</code>
+      <div class="desc"><strong>קטגוריה</strong> — שם חופשי שאנחנו בוחרים. משמש לעיצוב CSS (ירוק לhצלחה, אדום לשגיאה).</div>
+    </div>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header"><div class="code-filename"><span class="dr"></span><span class="dy"></span><span class="dg"></span>&nbsp; main.py — שלוש דוגמאות מהפרויקט</div></div>
+    <div class="code-body"><pre><span class="comment"># ── דוגמה 1: login מצליח ──</span>
+<span class="kw">if</span> user <span class="kw">in</span> valid_users:
+    current_user = user
+    <span class="hl-line"><span class="fn">flash</span>(<span class="str">" !נכנסת בהצלחה"</span>, <span class="str">"success"</span>)</span>
+    <span class="kw">return</span> <span class="fn">redirect</span>(<span class="fn">url_for</span>(<span class="str">'home'</span>))
+
+<span class="comment"># ── דוגמה 2: login נכשל ──</span>
+<span class="kw">else</span>:
+    <span class="hl-line"><span class="fn">flash</span>(<span class="str">f"משתמש לא קיים {user}"</span>, <span class="str">"error"</span>)</span>
+
+<span class="comment"># ── דוגמה 3: signup מצליח ──</span>
+valid_users.<span class="fn">append</span>(username)
+<span class="hl-line"><span class="fn">flash</span>(<span class="str">f"{username} נרשמת בהצלחה"</span>, <span class="str">"success"</span>)</span>
+<span class="kw">return</span> <span class="fn">redirect</span>(<span class="fn">url_for</span>(<span class="str">'login'</span>))
+
+<span class="comment"># ── דוגמה 4: logout ──</span>
+<span class="fn">flash</span>(<span class="str">f"התנתקת בהצלחה! {current_user}"</span>, <span class="str">"success"</span>)
+current_user = <span class="str">'Guest'</span>
+<span class="kw">return</span> <span class="fn">redirect</span>(<span class="fn">url_for</span>(<span class="str">'home'</span>))</pre></div>
+  </div>
+
+  <div class="card">
+    <h3>⚙️ תנאי הכרחי — secret_key</h3>
+    <p>Flash משתמשת ב-Session, שדורשת מפתח הצפנה. בלי זה Flask יקרוס!</p>
+    <div class="code-block">
+      <div class="code-body"><pre>app = Flask(__name__)
+<span class="hl-line">app.secret_key = <span class="str">"megido_secret_key"</span>  <span class="comment">← חובה!</span></span></pre></div>
+    </div>
+    <div class="callout blue">
+      <span class="icon">🔐</span>
+      <div class="body"><strong>secret_key</strong> משמש להצפנת ה-Session. בפרויקט אמיתי — שומרים אותו בנפרד ולא ב-קוד.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 3 ══════════════════════ -->
+<div class="slide" id="slide-3">
+  <div class="card amber">
+    <h2>📄 הצגת Flash ב-base.html</h2>
+    <p>שלב שני: מציגים את ההודעות בתבנית. הקוד נמצא ב-<span class="hl">base.html</span> — ולכן מופיע בכל דף!</p>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header"><div class="code-filename"><span class="dr"></span><span class="dy"></span><span class="dg"></span>&nbsp; templates/base.html — קטע ה-Flash</div></div>
+    <div class="code-body"><pre><span class="tag">&lt;main</span> <span class="attr">class</span>=<span class="str">"container"</span><span class="tag">&gt;</span>
+
+<span class="comment">    &lt;!-- הצגת הודעות Flash --&gt;</span>
+<span class="hl-line">    <span class="jinja">{% with messages = get_flashed_messages(with_categories=true) %}</span></span>
+<span class="hl-line">        <span class="jinja">{% if messages %}</span></span>
+<span class="hl-line">            <span class="jinja">{% for category, message in messages %}</span></span>
+<span class="hl-line">                <span class="tag">&lt;div</span> <span class="attr">class</span>=<span class="str">"flash-box <span class="jinja-var">{{ category }}</span>"</span><span class="tag">&gt;</span></span>
+<span class="hl-line">                    <span class="jinja-var">{{ message }}</span></span>
+<span class="hl-line">                <span class="tag">&lt;/div&gt;</span></span>
+<span class="hl-line">            <span class="jinja">{% endfor %}</span></span>
+<span class="hl-line">        <span class="jinja">{% endif %}</span></span>
+<span class="hl-line">    <span class="jinja">{% endwith %}</span></span>
+
+    <span class="jinja">{% block content %}{% endblock %}</span>
+<span class="tag">&lt;/main&gt;</span></pre></div>
+  </div>
+
+  <div class="card">
+    <h2>🔍 פירוק שורה שורה</h2>
+
+    <div class="annotated-line">
+      <code>get_flashed_messages(with_categories=true)</code>
+      <div class="desc">פונקציה של Flask שמחזירה את כל ההודעות שנשמרו ב-Session. עם <ic>with_categories=true</ic> מקבלים גם את שם הקטגוריה.</div>
+    </div>
+    <div class="annotated-line blue">
+      <code>{% with messages = ... %}</code>
+      <div class="desc">שומרים את תוצאת הפונקציה במשתנה <ic>messages</ic> — בתוך הבלוק הזה בלבד.</div>
+    </div>
+    <div class="annotated-line green">
+      <code>{% for category, message in messages %}</code>
+      <div class="desc">לולאה שמפרקת כל פריט לשניים: <ic>category</ic> (כמו "success" או "error") ו-<ic>message</ic> (הטקסט).</div>
+    </div>
+    <div class="annotated-line red">
+      <code>class="flash-box {{ category }}"</code>
+      <div class="desc">הקלאס של ה-div יהיה "flash-box success" או "flash-box error" — כך CSS מעצב כל אחת בנפרד!</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 4 ══════════════════════ -->
+<div class="slide" id="slide-4">
+  <div class="card amber">
+    <h2>🎨 עיצוב ב-CSS</h2>
+    <p>הקטגוריה הופכת לקלאס CSS — וכל קטגוריה מקבלת עיצוב שונה. כך נראה ב-style.css:</p>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header"><div class="code-filename"><span class="dr"></span><span class="dy"></span><span class="dg"></span>&nbsp; static/css/style.css — עיצוב Flash</div></div>
+    <div class="code-body"><pre><span class="comment">/* תיבת הבסיס — משותפת לכל הקטגוריות */</span>
+<span class="fn">.flash-box</span> {
+    width: <span class="num">40%</span>;
+    margin: <span class="num">20px</span> auto;        <span class="comment">/* מרכז אופקית */</span>
+    padding: <span class="num">12px</span>;
+    border: <span class="num">2px</span> solid black;
+    border-radius: <span class="num">8px</span>;
+    text-align: center;
+    font-weight: bold;
+}
+
+<span class="comment">/* ירוק — הצלחה */</span>
+<span class="hl-line"><span class="fn">.success</span> {</span>
+<span class="hl-line">    background-color: <span class="num">#d4edda</span>;  <span class="comment">/* ירוק בהיר */</span></span>
+<span class="hl-line">    color: <span class="num">#155724</span>;             <span class="comment">/* ירוק כהה */</span></span>
+<span class="hl-line">}</span>
+
+<span class="comment">/* אדום — שגיאה */</span>
+<span class="hl-line"><span class="fn">.error</span> {</span>
+<span class="hl-line">    background-color: <span class="num">#f8d7da</span>;  <span class="comment">/* אדום בהיר */</span></span>
+<span class="hl-line">    color: <span class="num">#721c24</span>;             <span class="comment">/* אדום כהה */</span></span>
+<span class="hl-line">}</span></pre></div>
+  </div>
+
+  <div class="card">
+    <h3>🔗 הקשר בין Python ל-CSS</h3>
+    <div class="flow">
+      <div class="flow-step">
+        <div class="num">1</div>
+        <div class="title">Python</div>
+        <div class="sub">flash("...", <strong>"success"</strong>)</div>
+      </div>
+      <div class="flow-step accent">
+        <div class="num">2</div>
+        <div class="title">Jinja2</div>
+        <div class="sub">class="flash-box <strong>success</strong>"</div>
+      </div>
+      <div class="flow-step">
+        <div class="num">3</div>
+        <div class="title">CSS</div>
+        <div class="sub">.success { background: #d4edda }</div>
+      </div>
+      <div class="flow-step">
+        <div class="num">4</div>
+        <div class="title">דפדפן</div>
+        <div class="sub">תיבה ירוקה!</div>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div>
+        <div class="col-label green">✓ flash("...", "success")</div>
+        <div class="flash-msg success" style="display:block;margin:0.5rem 0;">!נרשמת בהצלחה</div>
+        <div style="font-size:0.78rem;color:var(--text-muted);font-family:'Fira Code',monospace;">class="flash-box success"</div>
+      </div>
+      <div>
+        <div class="col-label red">✗ flash("...", "error")</div>
+        <div class="flash-msg error" style="display:block;margin:0.5rem 0;">משתמש לא קיים</div>
+        <div style="font-size:0.78rem;color:var(--text-muted);font-family:'Fira Code',monospace;">class="flash-box error"</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 5 ══════════════════════ -->
+<div class="slide" id="slide-5">
+  <div class="card amber">
+    <h2>⏱️ הדעיכה האוטומטית — JavaScript</h2>
+    <p>ב-base.html יש קוד JavaScript שגורם להודעה להיעלם אחרי 3 שניות:</p>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header"><div class="code-filename"><span class="dr"></span><span class="dy"></span><span class="dg"></span>&nbsp; templates/base.html — JavaScript</div></div>
+    <div class="code-body"><pre><span class="tag">&lt;script&gt;</span>
+<span class="hl-line">    <span class="fn">setTimeout</span>(<span class="kw">function</span>() {</span>
+<span class="hl-line">        document.<span class="fn">querySelectorAll</span>(<span class="str">'.flash-box'</span>).<span class="fn">forEach</span>(<span class="kw">function</span>(el) {</span>
+<span class="hl-line">            el.style.transition = <span class="str">"opacity 0.8s"</span>;</span>
+<span class="hl-line">            el.style.opacity = <span class="str">"0"</span>;</span>
+<span class="hl-line">        });</span>
+<span class="hl-line">    }, <span class="num">3000</span>);</span>  <span class="comment">← 3000 מילישניות = 3 שניות</span>
+<span class="tag">&lt;/script&gt;</span></pre></div>
+  </div>
+
+  <div class="card">
+    <h2>🔍 פירוק הקוד</h2>
+    <div class="annotated-line">
+      <code>setTimeout(function, 3000)</code>
+      <div class="desc">מריץ פונקציה אנונימית אחרי עיכוב של 3000 מילישניות (= 3 שניות).</div>
+    </div>
+    <div class="annotated-line blue">
+      <code>querySelectorAll('.flash-box')</code>
+      <div class="desc">מוצא את כל האלמנטים עם קלאס <ic>flash-box</ic> בדף — יכולות להיות כמה הודעות בו-זמנית.</div>
+    </div>
+    <div class="annotated-line green">
+      <code>transition = "opacity 0.8s"</code>
+      <div class="desc">מוסיף אפקט דעיכה חלקה של 0.8 שניות — במקום שההודעה תיעלם בבת אחת.</div>
+    </div>
+    <div class="annotated-line red">
+      <code>opacity = "0"</code>
+      <div class="desc">הופך את ההודעה לשקופה לחלוטין. שימו לב: ההודעה עדיין <strong>קיימת ב-HTML</strong> אבל בלתי נראית!</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>🎮 סימולטור — נסו בעצמכם!</h2>
+    <div class="simulator">
+      <div class="sim-bar">
+        <div class="sim-dots"><span class="dr"></span><span class="dy"></span><span class="dg"></span></div>
+        <div class="sim-url" id="simUrl">http://localhost:5000/</div>
+      </div>
+      <div class="sim-body">
+        <div class="sim-header">
+          <span>🏫 Megido High School Flask App</span>
+          <div class="sim-nav">
+            <a href="#">Home</a><a href="#">Users</a><a href="#">Login</a>
+          </div>
+        </div>
+        <div class="sim-flash-area">
+          <div class="sim-flash success" id="simFlash"></div>
+        </div>
+        <div class="sim-main">
+          <h2>🏠 Home Page</h2>
+          <p>This is the home page content.</p>
+        </div>
+      </div>
+      <div class="sim-controls">
+        <div style="width:100%">
+          <div class="sim-label">סימולציה של פעולות שמייצרות Flash:</div>
+        </div>
+        <button class="sim-btn green" id="btnLoginOk">✓ התחברות מוצלחת</button>
+        <button class="sim-btn red" id="btnLoginFail">✗ שם משתמש שגוי</button>
+        <button class="sim-btn green" id="btnSignup">✓ הרשמה מוצלחת</button>
+        <button class="sim-btn amber" id="btnLogout">↩ התנתקות</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 6 ══════════════════════ -->
+<div class="slide" id="slide-6">
+  <div class="card amber">
+    <h2>🗺️ המסע המלא של הודעת Flash</h2>
+    <p>מרגע שמשתמש שולח טופס Login ועד שההודעה נעלמת — הנה כל השלבים:</p>
+  </div>
+
+  <div class="card">
+    <div class="flow" style="flex-direction:column;gap:0;">
+      <div class="flow-step" style="flex-direction:row;justify-content:flex-start;gap:1rem;border-top:none;">
+        <div class="num">1</div>
+        <div>
+          <div class="title">המשתמש שולח טופס Login</div>
+          <div class="sub">דפדפן שולח POST /login עם שם המשתמש</div>
+        </div>
+      </div>
+      <div class="flow-step" style="flex-direction:row;justify-content:flex-start;gap:1rem;">
+        <div class="num">2</div>
+        <div>
+          <div class="title">Flask מריץ את login() ב-main.py</div>
+          <div class="sub">בודק אם המשתמש קיים ב-valid_users</div>
+        </div>
+      </div>
+      <div class="flow-step accent" style="flex-direction:row;justify-content:flex-start;gap:1rem;">
+        <div class="num">3</div>
+        <div>
+          <div class="title">flash() שומרת הודעה ב-Session</div>
+          <div class="sub"><ic style="color:var(--accent);">flash(" !נכנסת בהצלחה", "success")</ic> — נשמר בזיכרון השרת</div>
+        </div>
+      </div>
+      <div class="flow-step" style="flex-direction:row;justify-content:flex-start;gap:1rem;">
+        <div class="num">4</div>
+        <div>
+          <div class="title">redirect() מפנה לדף הבית</div>
+          <div class="sub"><ic>return redirect(url_for('home'))</ic> — שולח דפדפן ל- GET /</div>
+        </div>
+      </div>
+      <div class="flow-step accent" style="flex-direction:row;justify-content:flex-start;gap:1rem;">
+        <div class="num">5</div>
+        <div>
+          <div class="title">get_flashed_messages() שולפת ומוחקת</div>
+          <div class="sub">Jinja2 שולפת את ההודעות מה-Session — ומוחקת אותן מיד!</div>
+        </div>
+      </div>
+      <div class="flow-step" style="flex-direction:row;justify-content:flex-start;gap:1rem;">
+        <div class="num">6</div>
+        <div>
+          <div class="title">הדפדפן מציג את home.html עם ההודעה</div>
+          <div class="sub">ה-div עם <ic>class="flash-box success"</ic> מקבל עיצוב ירוק</div>
+        </div>
+      </div>
+      <div class="flow-step" style="flex-direction:row;justify-content:flex-start;gap:1rem;">
+        <div class="num">7</div>
+        <div>
+          <div class="title">JavaScript מדעיך אחרי 3 שניות</div>
+          <div class="sub">opacity → 0 עם transition חלקה. רענון הדף — ההודעה לא חוזרת</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 7 ══════════════════════ -->
+<div class="slide" id="slide-7">
+  <div class="card amber">
+    <h2>🧩 בדקו את עצמכם!</h2>
+    <p>ענו על השאלות הבאות — הכל מבוסס על הקוד האמיתי מהפרויקט:</p>
+  </div>
+
+  <div class="card" id="q1-card">
+    <div class="quiz-q">שאלה 1 — מה יהיה ה-class של ה-div כשקוראים <ic>flash("שגיאה", "error")</ic>?</div>
+    <div class="quiz-options">
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q1')">class="error"</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,true,'q1')">class="flash-box error"</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q1')">class="flash-box"</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q1')">class="flash error-box"</div>
+    </div>
+    <div class="quiz-feedback" id="q1-fb"></div>
+  </div>
+
+  <div class="card" id="q2-card">
+    <div class="quiz-q">שאלה 2 — מדוע flash() נמצאת לפני redirect() ולא אחריה?</div>
+    <div class="quiz-options">
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,false,'q2')">אין הבדל, אפשר גם אחרי</div>
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,true,'q2')">כי redirect() מסיים את הפונקציה ומחזיר תשובה לדפדפן — קוד אחריה לא ירוץ</div>
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,false,'q2')">כי flash() דורשת שה-session יהיה פתוח</div>
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,false,'q2')">כי כך Flask מחייב בתיעוד</div>
+    </div>
+    <div class="quiz-feedback" id="q2-fb"></div>
+  </div>
+
+  <div class="card" id="q3-card">
+    <div class="quiz-q">שאלה 3 — אם מרעננים את הדף אחרי שהודעת Flash הוצגה, מה יקרה?</div>
+    <div class="quiz-options">
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,false,'q3')">ההודעה תוצג שוב</div>
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,true,'q3')">ההודעה לא תוצג — היא נמחקה מה-Session ברגע שנשלפה</div>
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,false,'q3')">ההודעה תוצג פעמיים</div>
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,false,'q3')">תתקבל שגיאת JavaScript</div>
+    </div>
+    <div class="quiz-feedback" id="q3-fb"></div>
+  </div>
+
+  <div class="card" id="q4-card">
+    <div class="quiz-q">שאלה 4 — מה יקרה אם נסיר את <ic>secret_key</ic> מ-main.py?</div>
+    <div class="quiz-options">
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,false,'q4')">הודעות Flash פשוט לא יוצגו</div>
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,false,'q4')">ה-CSS לא יחול על ההודעות</div>
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,true,'q4')">Flask יזרוק שגיאה כי Session דורשת מפתח הצפנה</div>
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,false,'q4')">ה-JavaScript לא יוכל למחוק את ההודעות</div>
+    </div>
+    <div class="quiz-feedback" id="q4-fb"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLIDE 8 ══════════════════════ -->
+<div class="slide" id="slide-8">
+  <div class="completion">
+    <div class="trophy">⚡</div>
+    <h2>כל הכבוד! סיימתם את הלומדה</h2>
+    <p>למדתם כיצד Flash מאפשרת תקשורת חכמה עם המשתמשים</p>
+  </div>
+
+  <div class="card amber">
+    <h2>📚 סיכום — מה למדנו</h2>
+    <ul class="checklist">
+      <li>flash("טקסט", "קטגוריה") שולחת הודעה זמנית ב-Python</li>
+      <li>secret_key הכרחי כדי שה-Session יעבוד</li>
+      <li>get_flashed_messages(with_categories=true) שולפת ומוחקת בו-זמנית</li>
+      <li>הקטגוריה הופכת לקלאס CSS — כך עיצוב "success" ו-"error" שונה</li>
+      <li>JavaScript עם setTimeout מדעיך את ההודעה אחרי 3 שניות</li>
+      <li>Flash היא חד-פעמית — רענון הדף לא יציג אותה שנית</li>
+    </ul>
+  </div>
+
+  <div class="card warning" style="border-color:rgba(245,158,11,0.4);background:rgba(245,158,11,0.04);">
+    <h2>🚀 משימת המשך</h2>
+    <p>פותחים את הפרויקט ומנסים:</p>
+    <br>
+    <p><strong>1.</strong> מוסיפים קטגוריה חדשה <ic>"warning"</ic> — ומוסיפים לה עיצוב ב-CSS (צבע כתום)</p>
+    <p><strong>2.</strong> שולחים הודעת warning כשמשתמש מנסה להיכנס לדף Restricted בתור Guest — במקום HTML גולמי</p>
+    <p><strong>3.</strong> <strong>אתגר בונוס:</strong> משנים את ה-JavaScript כך שההודעה תיעלם אחרי 5 שניות במקום 3</p>
+  </div>
+</div>
+
+<!-- Navigation -->
+<div class="btn-row">
+  <button class="btn btn-secondary" id="prevBtn" disabled>← הקודם</button>
+  <span class="slide-num" id="slideNum">1 / 8</span>
+  <button class="btn btn-primary" id="nextBtn">הבא ←</button>
+</div>
+</div>
+
+<script>
+const TOTAL = 8;
+let current = 1;
+const quizAnswered = {};
+
+const feedbacks = {
+  q1: {
+    correct: '✓ נכון! ב-base.html הקלאס הוא "flash-box {{ category }}" — כלומר שני שמות קלאס: flash-box (לבסיס) ו-error (לצבע).',
+    wrong: '✗ לא מדויק. הקלאס הוא "flash-box error" — שני קלאסים: flash-box נותן את הבסיס, ו-error נותן את הצבע האדום.'
+  },
+  q2: {
+    correct: '✓ בדיוק! return redirect() מסיים את הפונקציה מיד. כל קוד אחריה לא יורץ.',
+    wrong: '✗ לא מדויק. return redirect() הוא פקודת return — הפונקציה מסתיימת ברגע שהיא מגיעה אליה. flash() חייבת לבוא לפני!'
+  },
+  q3: {
+    correct: '✓ נכון! זו הנקודה הקריטית של Flash — get_flashed_messages() מוחקת את ההודעות מה-Session בזמן השליפה. רענון הדף לא יחזיר אותן.',
+    wrong: '✗ לא מדויק. get_flashed_messages() מוחקת את ההודעות מה-Session ברגע שהיא שולפת אותן. רענון הדף לא יציג אותן שוב.'
+  },
+  q4: {
+    correct: '✓ נכון! Flask Session מבוססת על הצפנה, ו-secret_key הוא מפתח ההצפנה. בלעדיו Flask תזרוק RuntimeError.',
+    wrong: '✗ לא מדויק. Flask Session דורשת secret_key להצפנה. בלעדיו Flask תזרוק שגיאה: "The session is unavailable because no secret key was set".'
+  }
+};
+
+function initDots() {
+  const c = document.getElementById('navDots');
+  for (let i = 1; i <= TOTAL; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 1 ? ' active' : '');
+    d.id = 'dot-' + i;
+    c.appendChild(d);
+    d.addEventListener('click', (function(n){ return function(){ goTo(n); }; })(i));
+  }
+}
+
+function goTo(n) {
+  document.getElementById('slide-' + current).classList.remove('active');
+  document.getElementById('dot-' + current).classList.remove('active');
+  if (current < n) document.getElementById('dot-' + current).classList.add('completed');
+  current = n;
+  document.getElementById('slide-' + current).classList.add('active');
+  document.getElementById('dot-' + current).classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  updateUI();
+}
+
+function changeSlide(dir) {
+  const next = current + dir;
+  if (next < 1 || next > TOTAL) return;
+  goTo(next);
+}
+
+function updateUI() {
+  document.getElementById('prevBtn').disabled = current === 1;
+  document.getElementById('nextBtn').textContent = current === TOTAL ? '✓ סיום' : 'הבא ←';
+  document.getElementById('slideNum').textContent = current + ' / ' + TOTAL;
+  const pct = ((current - 1) / (TOTAL - 1)) * 100;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressText').textContent = 'שלב ' + current + ' מתוך ' + TOTAL;
+}
+
+function checkQuiz(el, isCorrect, qid) {
+  if (quizAnswered[qid]) return;
+  quizAnswered[qid] = true;
+  el.classList.add(isCorrect ? 'correct' : 'wrong');
+  const fb = document.getElementById(qid + '-fb');
+  fb.classList.add('show', isCorrect ? 'correct' : 'wrong');
+  fb.textContent = isCorrect ? feedbacks[qid].correct : feedbacks[qid].wrong;
+  if (!isCorrect) {
+    el.parentElement.querySelectorAll('.quiz-opt').forEach(function(opt) {
+      if (opt.getAttribute('onclick') && opt.getAttribute('onclick').includes('true')) {
+        opt.classList.add('correct');
+      }
+    });
+  }
+  document.querySelectorAll('#' + qid + '-card .quiz-opt').forEach(function(o) {
+    o.classList.add('locked');
+  });
+}
+
+// Simulator
+function showFlash(text, type) {
+  const el = document.getElementById('simFlash');
+  el.className = 'sim-flash ' + type;
+  el.textContent = text;
+  el.style.display = 'block';
+  el.style.opacity = '1';
+  el.style.transition = '';
+  clearTimeout(el._timer);
+  el._timer = setTimeout(function() {
+    el.style.transition = 'opacity 0.8s';
+    el.style.opacity = '0';
+  }, 3000);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  initDots();
+  updateUI();
+
+  document.getElementById('prevBtn').addEventListener('click', function() { changeSlide(-1); });
+  document.getElementById('nextBtn').addEventListener('click', function() { changeSlide(1); });
+
+  document.getElementById('btnLoginOk').addEventListener('click', function() {
+    document.getElementById('simUrl').textContent = 'http://localhost:5000/';
+    showFlash('!נכנסת בהצלחה ✓', 'success');
+  });
+  document.getElementById('btnLoginFail').addEventListener('click', function() {
+    document.getElementById('simUrl').textContent = 'http://localhost:5000/';
+    showFlash('משתמש לא קיים johndoe ✗', 'error');
+  });
+  document.getElementById('btnSignup').addEventListener('click', function() {
+    document.getElementById('simUrl').textContent = 'http://localhost:5000/login';
+    showFlash('!alice נרשמת בהצלחה ✓', 'success');
+  });
+  document.getElementById('btnLogout').addEventListener('click', function() {
+    document.getElementById('simUrl').textContent = 'http://localhost:5000/';
+    showFlash('!התנתקת בהצלחה ✓', 'success');
+  });
+});
+</script>
+</body>
+</html>

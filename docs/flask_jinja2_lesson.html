@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>לומדה: שפת תבניות Jinja2</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;600;700;900&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0c0e16;
+    --surface: #131620;
+    --surface2: #1b1f30;
+    --accent: #e879f9;
+    --accent2: #38bdf8;
+    --accent3: #fbbf24;
+    --success: #4ade80;
+    --danger: #f87171;
+    --text: #e2e8f0;
+    --text-muted: #64748b;
+    --border: #1e2338;
+    --code-bg: #080910;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Heebo', sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; min-height: 100vh; }
+
+  .hero {
+    background: linear-gradient(160deg, #160e20 0%, #0c0e16 60%);
+    border-bottom: 1px solid var(--border);
+    padding: 3rem 2rem 2.5rem; text-align: center; position: relative; overflow: hidden;
+  }
+  .hero::before {
+    content: ''; position: absolute; top: -40%; left: 50%; transform: translateX(-50%);
+    width: 700px; height: 400px;
+    background: radial-gradient(ellipse, rgba(232,121,249,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .badge { display: inline-block; background: rgba(232,121,249,0.12); color: var(--accent); border: 1px solid rgba(232,121,249,0.35); border-radius: 999px; padding: 0.3rem 1.1rem; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.05em; margin-bottom: 1rem; }
+  .hero h1 { font-size: clamp(2rem, 5vw, 3rem); font-weight: 900; line-height: 1.2; margin-bottom: 1rem; }
+  .hero h1 span { color: var(--accent); }
+  .hero p { color: var(--text-muted); font-size: 1.05rem; max-width: 560px; margin: 0 auto; }
+
+  .progress-container { background: var(--surface); border-bottom: 1px solid var(--border); padding: 1rem 2rem; display: flex; align-items: center; gap: 1rem; position: sticky; top: 0; z-index: 100; }
+  .progress-bar { flex: 1; height: 5px; background: var(--border); border-radius: 999px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 999px; transition: width 0.5s ease; width: 0%; }
+  .progress-text { font-size: 0.82rem; color: var(--text-muted); white-space: nowrap; }
+
+  .nav-dots { display: flex; justify-content: center; gap: 0.5rem; padding: 1.2rem; flex-wrap: wrap; }
+  .dot { width: 11px; height: 11px; border-radius: 50%; background: var(--border); cursor: pointer; transition: all 0.3s; }
+  .dot.active { background: var(--accent); transform: scale(1.35); }
+  .dot.completed { background: var(--accent2); }
+
+  .container { max-width: 900px; margin: 0 auto; padding: 0 1.5rem; }
+  .slide { display: none; animation: fadeIn 0.35s ease; }
+  .slide.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; margin-bottom: 1.5rem; }
+  .card.pink   { border-color: rgba(232,121,249,0.4); background: linear-gradient(135deg, rgba(232,121,249,0.05) 0%, var(--surface) 100%); }
+  .card.sky    { border-color: rgba(56,189,248,0.4);  background: linear-gradient(135deg, rgba(56,189,248,0.05)  0%, var(--surface) 100%); }
+  .card.amber  { border-color: rgba(251,191,36,0.4);  background: linear-gradient(135deg, rgba(251,191,36,0.05)  0%, var(--surface) 100%); }
+  .card.danger { border-color: rgba(248,113,113,0.35); background: rgba(248,113,113,0.04); }
+  .card h2 { font-size: 1.4rem; font-weight: 700; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.6rem; }
+  .card h3 { font-size: 1.05rem; font-weight: 600; margin: 1.2rem 0 0.6rem; color: var(--accent2); }
+  .card p  { color: #94a3b8; margin-bottom: 0.7rem; }
+
+  /* Code */
+  .code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin: 1rem 0; font-family: 'Fira Code', monospace; }
+  .code-header { background: var(--surface2); padding: 0.55rem 1rem; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
+  .code-filename { font-size: 0.78rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.5rem; }
+  .dr{width:9px;height:9px;border-radius:50%;background:#ff5f57;display:inline-block;}
+  .dy{width:9px;height:9px;border-radius:50%;background:#febc2e;display:inline-block;}
+  .dg{width:9px;height:9px;border-radius:50%;background:#28c840;display:inline-block;}
+  .code-tag { font-size: 0.72rem; background: rgba(232,121,249,0.15); color: var(--accent); border-radius: 4px; padding: 0.15rem 0.5rem; }
+  .code-body { padding: 1.1rem 1.3rem; overflow-x: auto; font-size: 0.83rem; line-height: 1.95; direction: ltr; text-align: left; }
+  .code-body pre { white-space: pre; }
+
+  /* Syntax */
+  .kw { color: #c792ea; }
+  .fn { color: #82aaff; }
+  .str { color: #c3e88d; }
+  .comment { color: #546e7a; font-style: italic; }
+  .j-tag { color: #e879f9; font-weight: 700; }        /* {% %} */
+  .j-var { color: #fb923c; font-weight: 600; }         /* {{ }} */
+  .j-kw  { color: #fbbf24; font-weight: 600; }         /* if, for, else */
+  .j-val { color: #4ade80; }                            /* 'Guest', true */
+  .tag   { color: #89ddff; }
+  .attr  { color: #c3e88d; }
+  .output { color: #94a3b8; font-style: italic; }
+  /* highlight lines */
+  .hl-p  { background: rgba(232,121,249,0.09); display: block; margin: 0 -1.3rem; padding: 0 1.3rem; border-right: 3px solid var(--accent); }
+  .hl-b  { background: rgba(56,189,248,0.09);  display: block; margin: 0 -1.3rem; padding: 0 1.3rem; border-right: 3px solid var(--accent2); }
+  .hl-a  { background: rgba(251,191,36,0.09);  display: block; margin: 0 -1.3rem; padding: 0 1.3rem; border-right: 3px solid var(--accent3); }
+  .hl-g  { background: rgba(74,222,128,0.09);  display: block; margin: 0 -1.3rem; padding: 0 1.3rem; border-right: 3px solid var(--success); }
+  .hl-r  { background: rgba(248,113,113,0.09); display: block; margin: 0 -1.3rem; padding: 0 1.3rem; border-right: 3px solid var(--danger); }
+
+  /* Tag reference pills */
+  .tag-ref { display: flex; align-items: flex-start; gap: 1rem; margin: 0.7rem 0; padding: 0.8rem 1rem; background: var(--surface2); border-radius: 10px; border-right: 3px solid var(--accent); }
+  .tag-ref.b { border-color: var(--accent2); }
+  .tag-ref.a { border-color: var(--accent3); }
+  .tag-ref.g { border-color: var(--success); }
+  .tag-ref .syntax { font-family: 'Fira Code', monospace; font-size: 0.83rem; background: var(--code-bg); padding: 0.25rem 0.65rem; border-radius: 6px; color: var(--accent); white-space: nowrap; flex-shrink: 0; line-height: 1.8; }
+  .tag-ref.b .syntax { color: var(--accent2); }
+  .tag-ref.a .syntax { color: var(--accent3); }
+  .tag-ref.g .syntax { color: var(--success); }
+  .tag-ref .desc { color: #94a3b8; font-size: 0.88rem; }
+  .tag-ref .desc strong { color: var(--text); }
+
+  /* Annotated line */
+  .ann { display: flex; align-items: flex-start; gap: 0.8rem; margin: 0.55rem 0; padding: 0.65rem 0.9rem; background: var(--surface2); border-radius: 8px; border-right: 3px solid var(--accent); font-size: 0.88rem; }
+  .ann.b { border-color: var(--accent2); }
+  .ann.a { border-color: var(--accent3); }
+  .ann.g { border-color: var(--success); }
+  .ann.r { border-color: var(--danger); }
+  .ann code { font-family: 'Fira Code', monospace; font-size: 0.81rem; background: var(--code-bg); padding: 0.15rem 0.5rem; border-radius: 5px; color: var(--accent); white-space: nowrap; flex-shrink: 0; }
+  .ann.b code { color: var(--accent2); } .ann.a code { color: var(--accent3); }
+  .ann.g code { color: var(--success); } .ann.r code { color: var(--danger); }
+  .ann .desc { color: #94a3b8; }
+
+  /* Callout */
+  .callout { padding: 0.85rem 1rem; border-radius: 10px; margin: 0.9rem 0; font-size: 0.9rem; display: flex; gap: 0.7rem; align-items: flex-start; }
+  .callout.p { background: rgba(232,121,249,0.07); border: 1px solid rgba(232,121,249,0.25); }
+  .callout.b { background: rgba(56,189,248,0.07);  border: 1px solid rgba(56,189,248,0.25); }
+  .callout.a { background: rgba(251,191,36,0.07);  border: 1px solid rgba(251,191,36,0.25); }
+  .callout.g { background: rgba(74,222,128,0.07);  border: 1px solid rgba(74,222,128,0.25); }
+  .callout.r { background: rgba(248,113,113,0.07); border: 1px solid rgba(248,113,113,0.25); }
+  .callout .icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 0.05rem; }
+  .callout .body { color: #94a3b8; }
+  .callout .body strong { color: var(--text); }
+
+  /* Two-col */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+  .col-head { font-size: 0.82rem; font-weight: 700; margin-bottom: 0.5rem; padding: 0.35rem 0.8rem; border-radius: 6px; display: inline-block; }
+  .col-head.p { background: rgba(232,121,249,0.15); color: var(--accent); }
+  .col-head.b { background: rgba(56,189,248,0.15);  color: var(--accent2); }
+  .col-head.a { background: rgba(251,191,36,0.15);  color: var(--accent3); }
+  .col-head.g { background: rgba(74,222,128,0.15);  color: var(--success); }
+  .col-head.r { background: rgba(248,113,113,0.15); color: var(--danger); }
+
+  /* Render preview box */
+  .render-box { background: white; border-radius: 10px; padding: 1rem 1.2rem; margin: 0.5rem 0; color: #333; font-size: 0.88rem; border: 2px solid #e2e8f0; }
+  .render-box .label { font-size: 0.72rem; color: #888; margin-bottom: 0.4rem; font-family: 'Fira Code', monospace; }
+  .render-box .render-nav { display: flex; gap: 0.5rem; font-size: 0.82rem; }
+  .render-box .render-nav a { background: #eee; border-radius: 4px; padding: 3px 10px; text-decoration: none; color: #333; }
+  .render-box .render-welcome { font-weight: 600; font-size: 0.9rem; }
+  .render-box table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  .render-box th { background: #f2f2f2; padding: 6px 10px; text-align: right; }
+  .render-box td { padding: 6px 10px; border-bottom: 1px solid #eee; }
+
+  /* Interactive playground */
+  .playground { background: var(--code-bg); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin: 1rem 0; }
+  .playground-header { background: var(--surface2); padding: 0.6rem 1rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .playground-title { font-size: 0.82rem; font-weight: 600; color: var(--text-muted); }
+  .playground-body { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+  .pg-pane { padding: 1rem 1.2rem; }
+  .pg-pane:first-child { border-left: 1px solid var(--border); }
+  .pg-label { font-size: 0.72rem; color: var(--text-muted); font-family: 'Fira Code', monospace; margin-bottom: 0.5rem; }
+  .pg-input { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem 0.8rem; font-family: 'Fira Code', monospace; font-size: 0.82rem; color: var(--text); resize: none; line-height: 1.7; margin-bottom: 0.5rem; }
+  .pg-input:focus { outline: none; border-color: var(--accent); }
+  .pg-run { background: var(--accent); color: #0c0e16; border: none; border-radius: 6px; padding: 0.4rem 1rem; font-size: 0.82rem; font-family: 'Heebo', sans-serif; font-weight: 700; cursor: pointer; transition: filter 0.2s; }
+  .pg-run:hover { filter: brightness(1.1); }
+  .pg-output { background: white; border-radius: 8px; padding: 0.7rem 0.9rem; font-size: 0.84rem; color: #333; min-height: 80px; white-space: pre-wrap; font-family: 'Heebo', sans-serif; line-height: 1.7; }
+  .pg-vars { display: flex; flex-direction: column; gap: 0.4rem; }
+  .pg-var-row { display: flex; align-items: center; gap: 0.5rem; }
+  .pg-var-key { font-family: 'Fira Code', monospace; font-size: 0.78rem; color: var(--accent); white-space: nowrap; min-width: 100px; }
+  .pg-var-val { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 0.3rem 0.6rem; font-family: 'Fira Code', monospace; font-size: 0.78rem; color: var(--accent3); }
+  .pg-var-val:focus { outline: none; border-color: var(--accent2); }
+
+  /* Checklist */
+  .checklist { list-style: none; }
+  .checklist li { padding: 0.55rem 0; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 0.8rem; font-size: 0.93rem; color: #94a3b8; }
+  .checklist li::before { content: '✓'; color: var(--accent); font-weight: 700; flex-shrink: 0; }
+
+  /* Quiz */
+  .quiz-q { font-size: 1rem; font-weight: 600; margin-bottom: 0.9rem; }
+  .quiz-options { display: flex; flex-direction: column; gap: 0.6rem; }
+  .quiz-opt { background: var(--surface2); border: 2px solid var(--border); border-radius: 10px; padding: 0.75rem 1.1rem; cursor: pointer; transition: all 0.2s; font-size: 0.87rem; direction: ltr; text-align: left; font-family: 'Fira Code', monospace; }
+  .quiz-opt.rtl { direction: rtl; text-align: right; font-family: 'Heebo', sans-serif; font-size: 0.93rem; }
+  .quiz-opt:hover:not(.locked) { border-color: var(--accent); background: rgba(232,121,249,0.07); }
+  .quiz-opt.correct { border-color: var(--success); background: rgba(74,222,128,0.09); color: var(--success); }
+  .quiz-opt.wrong   { border-color: var(--danger);  background: rgba(248,113,113,0.09); color: var(--danger); }
+  .quiz-feedback { margin-top: 0.9rem; padding: 0.85rem; border-radius: 10px; display: none; font-size: 0.9rem; }
+  .quiz-feedback.show { display: block; }
+  .quiz-feedback.correct { background: rgba(74,222,128,0.09);  border: 1px solid rgba(74,222,128,0.3); color: var(--success); }
+  .quiz-feedback.wrong   { background: rgba(248,113,113,0.09); border: 1px solid rgba(248,113,113,0.3); color: var(--danger); }
+
+  ic { font-family: 'Fira Code', monospace; font-size: 0.86em; background: var(--surface2); padding: 0.1em 0.4em; border-radius: 4px; color: var(--accent); }
+  .hl  { color: var(--accent);  font-weight: 600; }
+  .hl2 { color: var(--accent2); font-weight: 600; }
+  .hl3 { color: var(--accent3); font-weight: 600; }
+  .hlg { color: var(--success); font-weight: 600; }
+  .hlr { color: var(--danger);  font-weight: 600; }
+
+  .btn-row { display: flex; justify-content: space-between; align-items: center; padding: 2rem 0 3rem; gap: 1rem; }
+  .btn { padding: 0.75rem 1.8rem; border-radius: 10px; border: none; cursor: pointer; font-size: 0.95rem; font-family: 'Heebo', sans-serif; font-weight: 600; transition: all 0.25s; display: flex; align-items: center; gap: 0.4rem; }
+  .btn-primary { background: var(--accent); color: #0c0e16; }
+  .btn-primary:hover { filter: brightness(1.1); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(232,121,249,0.3); }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { background: var(--surface); }
+  .slide-num { color: var(--text-muted); font-size: 0.88rem; }
+
+  .completion { text-align: center; padding: 3rem 1rem; }
+  .completion .trophy { font-size: 4.5rem; margin-bottom: 1rem; }
+  .completion h2 { font-size: 1.9rem; font-weight: 900; margin-bottom: 0.5rem; color: var(--accent); }
+  .completion p { color: var(--text-muted); }
+
+  @media (max-width: 640px) {
+    .two-col { grid-template-columns: 1fr; }
+    .playground-body { grid-template-columns: 1fr; }
+    .btn-row { flex-direction: column; }
+    .btn { width: 100%; justify-content: center; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="badge">🎓 לומדת Flask — תיכון מגידו</div>
+  <h1>שפת תבניות Jinja2<br><span>Templating Language</span></h1>
+  <p>לומדים את שפת התבניות שמאפשרת לשלב Python בתוך HTML — משתנים, תנאים, לולאות ועוד</p>
+</div>
+
+<div class="progress-container">
+  <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+  <div class="progress-text" id="progressText">שלב 1 מתוך 9</div>
+</div>
+
+<div class="nav-dots" id="navDots"></div>
+
+<div class="container">
+
+<!-- ══════════════════ SLIDE 1 ══════════════════ -->
+<div class="slide active" id="slide-1">
+  <div class="card pink">
+    <h2>✨ מה זו Jinja2?</h2>
+    <p>HTML הוא שפה סטטית — הוא לא יודע "לחשוב". לא ניתן לכתוב בו "אם המשתמש מחובר, הצג כפתור logout". לשם כך Flask משתמש ב-<span class="hl">Jinja2</span> — שפת תבניות שמוסיפה לוגיקה לתוך ה-HTML.</p>
+    <p>Jinja2 רצה בשרת, לפני שה-HTML נשלח לדפדפן. הדפדפן רואה HTML רגיל — הוא אינו מודע ל-Jinja2.</p>
+  </div>
+
+  <div class="two-col">
+    <div>
+      <div class="col-head p">Jinja2 — בשרת</div>
+      <div class="code-block">
+        <div class="code-body"><pre><span class="tag">&lt;h4&gt;</span>Welcome <span class="j-var">{{ user }}</span>!<span class="tag">&lt;/h4&gt;</span>
+<span class="j-tag">{% if</span> <span class="j-kw">user</span> == <span class="j-val">'Guest'</span> <span class="j-tag">%}</span>
+  <span class="tag">&lt;a</span> <span class="attr">href</span>=<span class="str">"/login"</span><span class="tag">&gt;</span>Login<span class="tag">&lt;/a&gt;</span>
+<span class="j-tag">{% else %}</span>
+  <span class="tag">&lt;a</span> <span class="attr">href</span>=<span class="str">"/logout"</span><span class="tag">&gt;</span>Logout<span class="tag">&lt;/a&gt;</span>
+<span class="j-tag">{% endif %}</span></pre></div>
+      </div>
+    </div>
+    <div>
+      <div class="col-head b">HTML שמגיע לדפדפן</div>
+      <div class="code-block">
+        <div class="code-body"><pre><span class="comment">&lt;!-- אם user = 'alice' --&gt;</span>
+<span class="tag">&lt;h4&gt;</span>Welcome alice!<span class="tag">&lt;/h4&gt;</span>
+  <span class="tag">&lt;a</span> <span class="attr">href</span>=<span class="str">"/logout"</span><span class="tag">&gt;</span>Logout<span class="tag">&lt;/a&gt;</span>
+
+
+<span class="comment">&lt;!-- כל הjinja2 נעלם --&gt;</span></pre></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>🔑 שלוש סוגי תגיות Jinja2</h3>
+    <div class="tag-ref">
+      <div class="syntax">{{ ... }}</div>
+      <div class="desc"><strong>הצגת ערך</strong> — מחליף ביטוי בתוצאה שלו. למשל <ic>{{ user }}</ic> הופך ל-"alice".</div>
+    </div>
+    <div class="tag-ref b">
+      <div class="syntax">{% ... %}</div>
+      <div class="desc"><strong>פקודת לוגיקה</strong> — if, for, block, extends, with, וכו'. לא מוציאה טקסט ישיר.</div>
+    </div>
+    <div class="tag-ref a">
+      <div class="syntax">{# ... #}</div>
+      <div class="desc"><strong>הערה</strong> — לא מוצגת ב-HTML הסופי. שימושית לתיעוד בקוד.</div>
+    </div>
+
+    <div class="callout p" style="margin-top:1rem;">
+      <span class="icon">💡</span>
+      <div class="body"><strong>נלמד בלומדה זו:</strong> כל סוגי התגיות — עם דוגמאות מהקוד האמיתי מהפרויקט שלנו.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ SLIDE 2 ══════════════════ -->
+<div class="slide" id="slide-2">
+  <div class="card pink">
+    <h2>🟠 <ic style="font-size:1rem;">{{ }}</ic> — הצגת משתנים</h2>
+    <p>שתי סוגריים מסולסלות מציגות את הערך של משתנה שנשלח מ-Python. זה הפשוט ביותר בJinja2.</p>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header">
+      <div class="code-filename"><span class="dr"></span><span class="dy"></span><span class="dg"></span>&nbsp; שימושים ב-{{ }} מהפרויקט</div>
+    </div>
+    <div class="code-body"><pre><span class="comment">── base.html ──</span>
+<span class="tag">&lt;h4&gt;</span> Welcome <span class="hl-p"><span class="j-var">{{ user }}</span></span> !<span class="tag">&lt;/h4&gt;</span>
+<span class="comment">   ↑ Python שולחת: render_template('...', user=current_user)</span>
+
+<span class="comment">── base.html — Flash message ──</span>
+<span class="tag">&lt;div</span> <span class="attr">class</span>=<span class="str">"flash-box <span class="hl-p"><span class="j-var">{{ category }}</span></span>"</span><span class="tag">&gt;</span>
+    <span class="hl-p"><span class="j-var">{{ message }}</span></span>
+<span class="tag">&lt;/div&gt;</span>
+<span class="comment">   ↑ category = "success" / "error"</span>
+<span class="comment">     message  = "!נכנסת בהצלחה"</span>
+
+<span class="comment">── restricted.html ──</span>
+<span class="tag">&lt;p&gt;</span><span class="hl-p"><span class="j-var">{{ user }}</span></span> You now have access!<span class="tag">&lt;/p&gt;</span>
+
+<span class="comment">── users.html — בתוך לולאה ──</span>
+<span class="j-tag">{% for</span> <span class="j-kw">user</span> <span class="j-tag">in</span> <span class="j-kw">users</span> <span class="j-tag">%}</span>
+    <span class="tag">&lt;td&gt;</span><span class="hl-p"><span class="j-var">{{ user }}</span></span><span class="tag">&lt;/td&gt;</span>
+<span class="j-tag">{% endfor %}</span></pre></div>
+  </div>
+
+  <div class="card">
+    <h3>🔗 כיצד המשתנה מגיע מ-Python?</h3>
+    <div class="ann">
+      <code>render_template('home.html', user=current_user)</code>
+      <div class="desc">Python מעבירה את <ic>current_user</ic> תחת השם <ic>user</ic>. בתבנית — <ic>{{ user }}</ic> = הערך.</div>
+    </div>
+    <div class="ann b">
+      <code>render_template("users.html", user=current_user, users=valid_users)</code>
+      <div class="desc">ניתן להעביר כמה משתנים — כל אחד נגיש בשמו ב-<ic>{{ }}</ic>.</div>
+    </div>
+    <div class="ann a">
+      <code>render_template('login.html', user=current_user, message='')</code>
+      <div class="desc">גם מחרוזות ריקות מועברות. login.html מציגה שגיאה רק אם message לא ריק.</div>
+    </div>
+
+    <div class="callout r">
+      <span class="icon">⚠️</span>
+      <div class="body"><strong>שים לב:</strong> <ic>{{ user }}</ic> בתבנית מתייחס לפרמטר ששולח render_template, לא למשתנה current_user בPython. השם חייב להתאים!</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ SLIDE 3 ══════════════════ -->
+<div class="slide" id="slide-3">
+  <div class="card pink">
+    <h2>🟣 <ic style="font-size:1rem;">{% if %}</ic> — תנאים</h2>
+    <p>תגית הלוגיקה החזקה ביותר — מציגה חלקים שונים של HTML בהתאם לתנאי. בפרויקט יש שימוש כפול:</p>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header"><div class="code-filename"><span class="dr"></span><span class="dy"></span><span class="dg"></span>&nbsp; base.html — תפריט דינמי</div></div>
+    <div class="code-body"><pre><span class="hl-p"><span class="j-tag">{% if</span> <span class="j-kw">user</span> == <span class="j-val">'Guest'</span> <span class="j-tag">%}</span></span>
+    <span class="tag">&lt;li&gt;&lt;a</span> <span class="attr">href</span>=<span class="str">"/login"</span><span class="tag">&gt;</span>Login<span class="tag">&lt;/a&gt;&lt;/li&gt;</span>
+    <span class="tag">&lt;li&gt;&lt;a</span> <span class="attr">href</span>=<span class="str">"/signup"</span><span class="tag">&gt;</span>Signup<span class="tag">&lt;/a&gt;&lt;/li&gt;</span>
+<span class="hl-p"><span class="j-tag">{% else %}</span></span>
+    <span class="tag">&lt;li&gt;&lt;a</span> <span class="attr">href</span>=<span class="str">"/restricted"</span><span class="tag">&gt;</span>Restricted<span class="tag">&lt;/a&gt;&lt;/li&gt;</span>
+    <span class="tag">&lt;li&gt;&lt;a</span> <span class="attr">href</span>=<span class="str">"/logout"</span><span class="tag">&gt;</span>Logout<span class="tag">&lt;/a&gt;&lt;/li&gt;</span>
+<span class="hl-p"><span class="j-tag">{% endif %}</span></span></pre></div>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header"><div class="code-filename"><span class="dr"></span><span class="dy"></span><span class="dg"></span>&nbsp; base.html — Flash messages</div></div>
+    <div class="code-body"><pre><span class="j-tag">{% with</span> <span class="j-kw">messages</span> = <span class="fn">get_flashed_messages</span>(with_categories=<span class="j-val">true</span>) <span class="j-tag">%}</span>
+<span class="hl-p">    <span class="j-tag">{% if</span> <span class="j-kw">messages</span> <span class="j-tag">%}</span></span>   <span class="comment">← בודק: יש הודעות בכלל?</span>
+        <span class="j-tag">{% for</span> <span class="j-kw">category, message</span> in <span class="j-kw">messages</span> <span class="j-tag">%}</span>
+            <span class="tag">&lt;div</span> <span class="attr">class</span>=<span class="str">"flash-box <span class="j-var">{{ category }}</span>"</span><span class="tag">&gt;</span>
+                <span class="j-var">{{ message }}</span>
+            <span class="tag">&lt;/div&gt;</span>
+        <span class="j-tag">{% endfor %}</span>
+<span class="hl-p">    <span class="j-tag">{% endif %}</span></span>
+<span class="j-tag">{% endwith %}</span></pre></div>
+  </div>
+
+  <div class="card">
+    <h3>📐 מבנה מלא עם elif</h3>
+    <p>Jinja2 תומכת גם ב-<ic>{% elif %}</ic> לתנאים מרובים:</p>
+    <div class="code-block">
+      <div class="code-body"><pre><span class="j-tag">{% if</span> <span class="j-kw">user</span> == <span class="j-val">'Guest'</span> <span class="j-tag">%}</span>
+    <span class="tag">&lt;p&gt;</span>אינכם מחוברים<span class="tag">&lt;/p&gt;</span>
+<span class="j-tag">{% elif</span> <span class="j-kw">user</span> == <span class="j-val">'admin'</span> <span class="j-tag">%}</span>
+    <span class="tag">&lt;p&gt;</span>שלום מנהל!<span class="tag">&lt;/p&gt;</span>
+<span class="j-tag">{% else %}</span>
+    <span class="tag">&lt;p&gt;</span>שלום <span class="j-var">{{ user }}</span>!<span class="tag">&lt;/p&gt;</span>
+<span class="j-tag">{% endif %}</span></pre></div>
+    </div>
+    <div class="ann">
+      <code>{% if messages %}</code>
+      <div class="desc">אם messages היא רשימה ריקה — Python מחשיב אותה כ-False. כך אנחנו בודקים "יש בכלל הודעות?" בלי לבדוק אורך ידנית.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ SLIDE 4 ══════════════════ -->
+<div class="slide" id="slide-4">
+  <div class="card pink">
+    <h2>🔁 <ic style="font-size:1rem;">{% for %}</ic> — לולאות</h2>
+    <p>לולאת for מאפשרת ליצור HTML חוזר עבור כל פריט ברשימה. users.html משתמשת בה כדי לבנות שורת טבלה לכל משתמש:</p>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header"><div class="code-filename"><span class="dr"></span><span class="dy"></span><span class="dg"></span>&nbsp; templates/users.html</div></div>
+    <div class="code-body"><pre><span class="tag">&lt;table</span> <span class="attr">class</span>=<span class="str">"userstable"</span><span class="tag">&gt;</span>
+    <span class="tag">&lt;thead&gt;&lt;tr&gt;&lt;th&gt;</span>Username<span class="tag">&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;</span>
+    <span class="tag">&lt;tbody&gt;</span>
+<span class="hl-p">        <span class="j-tag">{% for</span> <span class="j-kw">user</span> in <span class="j-kw">users</span> <span class="j-tag">%}</span></span>
+        <span class="tag">&lt;tr&gt;</span>
+            <span class="tag">&lt;td&gt;</span><span class="j-var">{{ user }}</span><span class="tag">&lt;/td&gt;</span>
+        <span class="tag">&lt;/tr&gt;</span>
+<span class="hl-p">        <span class="j-tag">{% endfor %}</span></span>
+    <span class="tag">&lt;/tbody&gt;</span>
+<span class="tag">&lt;/table&gt;</span></pre></div>
+  </div>
+
+  <div class="card">
+    <h3>📊 מה נוצר בפועל?</h3>
+    <p>אם <ic>valid_users = ['alice', 'bob', 'charlie']</ic>, הלולאה מייצרת:</p>
+    <div class="two-col">
+      <div>
+        <div class="col-head p">קוד Jinja2</div>
+        <div class="code-block">
+          <div class="code-body"><pre><span class="j-tag">{% for</span> <span class="j-kw">user</span> in <span class="j-kw">users</span> <span class="j-tag">%}</span>
+<span class="tag">&lt;tr&gt;&lt;td&gt;</span><span class="j-var">{{ user }}</span><span class="tag">&lt;/td&gt;&lt;/tr&gt;</span>
+<span class="j-tag">{% endfor %}</span></pre></div>
+        </div>
+      </div>
+      <div>
+        <div class="col-head b">HTML שנוצר</div>
+        <div class="code-block">
+          <div class="code-body"><pre><span class="tag">&lt;tr&gt;&lt;td&gt;</span>alice<span class="tag">&lt;/td&gt;&lt;/tr&gt;</span>
+<span class="tag">&lt;tr&gt;&lt;td&gt;</span>bob<span class="tag">&lt;/td&gt;&lt;/tr&gt;</span>
+<span class="tag">&lt;tr&gt;&lt;td&gt;</span>charlie<span class="tag">&lt;/td&gt;&lt;/tr&gt;</span></pre></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="render-box" style="margin-top:0.5rem;">
+      <div class="label">תצוגה בדפדפן:</div>
+      <table>
+        <tr><th>Username</th></tr>
+        <tr><td>alice</td></tr>
+        <tr><td>bob</td></tr>
+        <tr><td>charlie</td></tr>
+      </table>
+    </div>
+
+    <div class="ann b" style="margin-top:1rem;">
+      <code>{% for category, message in messages %}</code>
+      <div class="desc">לולאה על רשימת צמדים — כל איטרציה מפרקת אוטומטית ל-<ic>category</ic> ו-<ic>message</ic>. כך base.html מציגה הודעות Flash.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ SLIDE 5 ══════════════════ -->
+<div class="slide" id="slide-5">
+  <div class="card pink">
+    <h2>📦 <ic style="font-size:1rem;">{% with %}</ic> ו-<ic style="font-size:1rem;">{% block %}</ic></h2>
+    <p>שתי פקודות מיוחדות שמשמשות בפרויקט שלנו לצרכים שונים:</p>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header"><div class="code-filename"><span class="dr"></span><span class="dy"></span><span class="dg"></span>&nbsp; base.html — שימוש ב-{% with %}</div></div>
+    <div class="code-body"><pre><span class="hl-p"><span class="j-tag">{% with</span> <span class="j-kw">messages</span> = <span class="fn">get_flashed_messages</span>(with_categories=<span class="j-val">true</span>) <span class="j-tag">%}</span></span>
+    <span class="j-tag">{% if</span> <span class="j-kw">messages</span> <span class="j-tag">%}</span>
+        <span class="j-tag">{% for</span> <span class="j-kw">category, message</span> in <span class="j-kw">messages</span> <span class="j-tag">%}</span>
+            <span class="tag">&lt;div</span> <span class="attr">class</span>=<span class="str">"flash-box <span class="j-var">{{ category }}</span>"</span><span class="tag">&gt;</span><span class="j-var">{{ message }}</span><span class="tag">&lt;/div&gt;</span>
+        <span class="j-tag">{% endfor %}</span>
+    <span class="j-tag">{% endif %}</span>
+<span class="hl-p"><span class="j-tag">{% endwith %}</span></span></pre></div>
+  </div>
+
+  <div class="ann">
+    <code>{% with messages = ... %}</code>
+    <div class="desc">יוצר משתנה זמני <ic>messages</ic> שקיים רק בתוך הבלוק. מחוץ ל-endwith — המשתנה לא קיים. שימושי לקריאת קוד.</div>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header"><div class="code-filename"><span class="dr"></span><span class="dy"></span><span class="dg"></span>&nbsp; base.html + home.html — {% block %}</div></div>
+    <div class="code-body"><pre><span class="comment">── base.html: מגדיר "חלון" ──</span>
+<span class="tag">&lt;title&gt;</span><span class="hl-b"><span class="j-tag">{% block</span> <span class="j-kw">title</span> <span class="j-tag">%}</span></span>Flask App<span class="hl-b"><span class="j-tag">{% endblock %}</span></span><span class="tag">&lt;/title&gt;</span>
+
+<span class="tag">&lt;main</span> <span class="attr">class</span>=<span class="str">"container"</span><span class="tag">&gt;</span>
+    <span class="hl-b"><span class="j-tag">{% block</span> <span class="j-kw">content</span> <span class="j-tag">%}</span></span>
+    <span class="hl-b"><span class="j-tag">{% endblock %}</span></span>
+<span class="tag">&lt;/main&gt;</span>
+
+<span class="comment">── home.html: ממלא את "החלון" ──</span>
+<span class="j-tag">{% extends</span> <span class="j-val">"base.html"</span> <span class="j-tag">%}</span>
+
+<span class="hl-b"><span class="j-tag">{% block</span> <span class="j-kw">title</span> <span class="j-tag">%}</span></span>Home<span class="hl-b"><span class="j-tag">{% endblock %}</span></span>
+
+<span class="hl-b"><span class="j-tag">{% block</span> <span class="j-kw">content</span> <span class="j-tag">%}</span></span>
+    <span class="tag">&lt;h2&gt;</span>Home Page<span class="tag">&lt;/h2&gt;</span>
+<span class="hl-b"><span class="j-tag">{% endblock %}</span></span></pre></div>
+  </div>
+
+  <div class="ann b">
+    <code>{% block name %} ברירת מחדל {% endblock %}</code>
+    <div class="desc">ב-base.html: מגדיר אזור עם תוכן ברירת מחדל ("Flask App" בכותרת). אם דף-בן לא מגדיר בלוק זה — ברירת המחדל מוצגת.</div>
+  </div>
+</div>
+
+<!-- ══════════════════ SLIDE 6 ══════════════════ -->
+<div class="slide" id="slide-6">
+  <div class="card pink">
+    <h2>🔗 <ic style="font-size:1rem;">{{ url_for() }}</ic> — יצירת קישורים דינמיים</h2>
+    <p>במקום לכתוב כתובות URL ישירות, Jinja2 מאפשרת ליצור אותן לפי שם הפונקציה ב-main.py. זה מונע שגיאות אם כתובת משתנה:</p>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header"><div class="code-filename"><span class="dr"></span><span class="dy"></span><span class="dg"></span>&nbsp; שימוש ב-url_for בפרויקט</div></div>
+    <div class="code-body"><pre><span class="comment">── base.html: טעינת CSS ──</span>
+<span class="tag">&lt;link</span> <span class="attr">rel</span>=<span class="str">"stylesheet"</span>
+      <span class="hl-a"><span class="attr">href</span>=<span class="str">"<span class="j-var">{{ url_for('static', filename='css/style.css') }}</span>"</span></span><span class="tag">&gt;</span>
+<span class="comment">  ↑ Flask מחזיר: /static/css/style.css</span>
+
+<span class="comment">── main.py: redirect ──</span>
+<span class="kw">return</span> <span class="fn">redirect</span>(<span class="hl-a"><span class="fn">url_for</span>(<span class="str">'home'</span>)</span>)
+<span class="comment">  ↑ 'home' = שם הפונקציה, לא ה-URL</span>
+
+<span class="kw">return</span> <span class="fn">redirect</span>(<span class="hl-a"><span class="fn">url_for</span>(<span class="str">'login'</span>)</span>)
+<span class="comment">  ↑ Flask מחפש את הפונקציה login() ומחזיר /login</span></pre></div>
+  </div>
+
+  <div class="card">
+    <h3>🔍 למה url_for ולא /static/css/style.css ישירות?</h3>
+    <div class="ann">
+      <code>url_for('static', filename='css/style.css')</code>
+      <div class="desc">Flask יוצר את הנתיב הנכון תמיד — גם אם האפליקציה רצה בנתיב שאינו root, או שמבנה התיקיות משתנה.</div>
+    </div>
+    <div class="ann a">
+      <code>url_for('home')</code>
+      <div class="desc">Flask מחפש את ה-route עם <ic>@app.route</ic> ששייך לפונקציה <ic>home()</ic>. אם ה-URL ישתנה מ-'/' למשהו אחר — הקוד עדיין יעבוד!</div>
+    </div>
+
+    <div class="callout g">
+      <span class="icon">✅</span>
+      <div class="body"><strong>כלל טוב:</strong> בתוך תבניות — תמיד <ic>{{ url_for('static', ...) }}</ic> לקבצים סטטיים. ב-Python — תמיד <ic>url_for('function_name')</ic> ב-redirect.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ SLIDE 7 ══════════════════ -->
+<div class="slide" id="slide-7">
+  <div class="card pink">
+    <h2>🎮 מגרש משחקים — נסו Jinja2</h2>
+    <p>שנו את ערכי המשתנים וראו כיצד הפלט משתנה. זה בדיוק מה שFlask עושה בשרת לפני שליחת ה-HTML:</p>
+  </div>
+
+  <div class="playground">
+    <div class="playground-header">
+      <div class="playground-title">🧪 סימולטור Jinja2</div>
+      <button class="pg-run" id="pgRun">▶ הרץ</button>
+    </div>
+    <div class="playground-body">
+      <div class="pg-pane">
+        <div class="pg-label">📝 תבנית Jinja2:</div>
+        <textarea class="pg-input" id="pgTemplate" rows="10">{% if user == 'Guest' %}
+  <p>אינכם מחוברים. <a href="/login">התחברו</a></p>
+{% else %}
+  <p>שלום {{ user }}! 👋</p>
+{% endif %}
+
+<ul>
+{% for item in users %}
+  <li>{{ item }}</li>
+{% endfor %}
+</ul></textarea>
+      </div>
+      <div class="pg-pane">
+        <div class="pg-label">⚙️ משתנים מ-Python:</div>
+        <div class="pg-vars">
+          <div class="pg-var-row">
+            <span class="pg-var-key">user =</span>
+            <input class="pg-var-val" id="pgUser" value="Guest" type="text">
+          </div>
+          <div class="pg-var-row">
+            <span class="pg-var-key">users =</span>
+            <input class="pg-var-val" id="pgUsers" value="alice, bob, charlie" type="text">
+          </div>
+        </div>
+        <div style="margin-top:1rem;">
+          <div class="pg-label">🖥️ פלט HTML:</div>
+          <div class="pg-output" id="pgOutput">לחצו "הרץ" כדי לראות תוצאה</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card sky">
+    <h3>💡 דברים לנסות</h3>
+    <ul class="checklist">
+      <li>שנו user מ-<ic>'Guest'</ic> ל-<ic>'alice'</ic> — מה משתנה?</li>
+      <li>הוסיפו שם למשתנה users — איך הרשימה גדלה?</li>
+      <li>שנו את התבנית — הוסיפו <ic>{% elif user == 'admin' %}</ic></li>
+      <li>הריצו עם users ריק (מחקו הכל) — מה קורה?</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ══════════════════ SLIDE 8 ══════════════════ -->
+<div class="slide" id="slide-8">
+  <div class="card pink">
+    <h2>🗺️ מפת כל Jinja2 בפרויקט</h2>
+    <p>סקירה מהירה של כל מקום שבו Jinja2 משמשת בקבצים שלנו:</p>
+  </div>
+
+  <div class="card">
+    <div class="col-head p" style="margin-bottom:1rem;">base.html</div>
+    <div class="ann">   <code>{{ user }}</code>              <div class="desc">בכותרת "Welcome X!" — שם המשתמש הנוכחי</div></div>
+    <div class="ann b"> <code>{% if user == 'Guest' %}</code> <div class="desc">הסתעפות תפריט — Login/Signup לעומת Restricted/Logout</div></div>
+    <div class="ann a"> <code>{% with messages = get_flashed_messages(...) %}</code> <div class="desc">שליפת הודעות Flash לאחסון זמני</div></div>
+    <div class="ann g"> <code>{% if messages %}</code>        <div class="desc">בדיקה: יש הודעות בכלל?</div></div>
+    <div class="ann">   <code>{% for category, message in messages %}</code> <div class="desc">לולאה: מציגה כל הודעת Flash</div></div>
+    <div class="ann b"> <code>{{ category }}, {{ message }}</code> <div class="desc">תוכן ה-div: הקלאס ותוכן הטקסט</div></div>
+    <div class="ann a"> <code>{% block title %} / {% block content %}</code> <div class="desc">שני "חלונות" שדפי הבן ממלאים</div></div>
+    <div class="ann g"> <code>url_for('static', filename='css/style.css')</code> <div class="desc">נתיב ה-CSS</div></div>
+  </div>
+
+  <div class="card">
+    <div class="col-head b" style="margin-bottom:1rem;">דפי הבן — home / login / signup / restricted / users</div>
+    <div class="ann">   <code>{% extends "base.html" %}</code>  <div class="desc">ירושת התבנית האם — שורה ראשונה בכל קובץ</div></div>
+    <div class="ann b"> <code>{% block title %}...{% endblock %}</code> <div class="desc">כותרת ייחודית לכל דף</div></div>
+    <div class="ann a"> <code>{% block content %}...{% endblock %}</code> <div class="desc">התוכן הייחודי של כל דף</div></div>
+    <div class="ann g"> <code>{{ user }}</code>                 <div class="desc">restricted.html: "X You now have access!"</div></div>
+    <div class="ann">   <code>{% if message %} {{ message }} {% endif %}</code> <div class="desc">login.html ו-signup.html: הצגת שגיאה מ-Python</div></div>
+    <div class="ann b"> <code>{% for user in users %} {{ user }} {% endfor %}</code> <div class="desc">users.html: שורת טבלה לכל משתמש</div></div>
+  </div>
+</div>
+
+<!-- ══════════════════ SLIDE 9 ══════════════════ -->
+<div class="slide" id="slide-9">
+  <div class="card pink">
+    <h2>🧩 בדקו את עצמכם!</h2>
+  </div>
+
+  <div class="card" id="q1-card">
+    <div class="quiz-q">שאלה 1 — מה ההבדל בין <ic>{{ user }}</ic> לבין <ic>{% if user %}</ic>?</div>
+    <div class="quiz-options">
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,false,'q1')">אין הבדל, שתיהן מציגות את user</div>
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,true,'q1')">{{ }} מציגה את ערך המשתנה בHTML, ואילו {% %} מריצה לוגיקה ולא מציגה טקסט</div>
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,false,'q1')">{{ }} לPython ו-{% %} לJavaScript</div>
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,false,'q1')">{{ }} לתבניות בלבד, {% %} לכל קובץ</div>
+    </div>
+    <div class="quiz-feedback" id="q1-fb"></div>
+  </div>
+
+  <div class="card" id="q2-card">
+    <div class="quiz-q">שאלה 2 — ב-users.html יש <ic>{% for user in users %}</ic>. מאיפה מגיע <ic>users</ic>?</div>
+    <div class="quiz-options">
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,false,'q2')">ממשתנה גלובלי שJinja2 מכיר אוטומטית</div>
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,false,'q2')">מקובץ config.py</div>
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,true,'q2')">מפרמטר שנשלח ב-render_template: render_template("users.html", users=valid_users)</div>
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,false,'q2')">Jinja2 קוראת ישירות את valid_users מ-main.py</div>
+    </div>
+    <div class="quiz-feedback" id="q2-fb"></div>
+  </div>
+
+  <div class="card" id="q3-card">
+    <div class="quiz-q">שאלה 3 — מה יוצג אם <ic>user = 'alice'</ic> ואנו כותבים: <ic>&lt;h4&gt;Welcome {{ user }}!&lt;/h4&gt;</ic></div>
+    <div class="quiz-options">
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q3')">Welcome {{ user }}!</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,true,'q3')">Welcome alice!</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q3')">Welcome current_user!</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q3')">שגיאה — אי אפשר בתוך tag</div>
+    </div>
+    <div class="quiz-feedback" id="q3-fb"></div>
+  </div>
+
+  <div class="card" id="q4-card">
+    <div class="quiz-q">שאלה 4 — מה קורה כש-<ic>valid_users</ic> ריק ו-users.html מריצה <ic>{% for user in users %}</ic>?</div>
+    <div class="quiz-options">
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,false,'q4')">Jinja2 תזרוק שגיאה</div>
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,true,'q4')">הלולאה פשוט לא תרוץ — הטבלה תיראה ריקה (רק כותרות)</div>
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,false,'q4')">הדף לא ייטען</div>
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,false,'q4')">תוצג שורה אחת עם ערך None</div>
+    </div>
+    <div class="quiz-feedback" id="q4-fb"></div>
+  </div>
+
+  <div class="card" id="q5-card">
+    <div class="quiz-q">שאלה 5 — מה ההבדל בין <ic>{% block content %}</ic> ב-base.html לבין <ic>{% block content %}</ic> ב-home.html?</div>
+    <div class="quiz-options">
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,false,'q5')">זהים לחלוטין — אותה פקודה</div>
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,true,'q5')">ב-base.html זה הגדרת "חלון" ריק, ב-home.html זה מילוי ה"חלון" בתוכן ייחודי</div>
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,false,'q5')">ב-base.html לצד שרת, ב-home.html לצד לקוח</div>
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,false,'q5')">רק base.html יכולה להשתמש ב-block</div>
+    </div>
+    <div class="quiz-feedback" id="q5-fb"></div>
+  </div>
+</div>
+
+<!-- ══════════════════ SLIDE 10 ══════════════════ -->
+<div class="slide" id="slide-10">
+  <div class="completion">
+    <div class="trophy">🧩</div>
+    <h2>כל הכבוד! סיימתם את הלומדה</h2>
+    <p>למדתם את שפת התבניות Jinja2 — הגשר בין Python ל-HTML</p>
+  </div>
+
+  <div class="card pink">
+    <h2>📚 סיכום — מה למדנו</h2>
+    <ul class="checklist">
+      <li><ic>{{ }}</ic> — מציגה ערך משתנה שנשלח מ-render_template</li>
+      <li><ic>{% if %} / {% elif %} / {% else %} / {% endif %}</ic> — הסתעפות לוגית</li>
+      <li><ic>{% for x in list %} / {% endfor %}</ic> — לולאה ליצירת HTML חוזר</li>
+      <li><ic>{% with var = expr %} / {% endwith %}</ic> — משתנה זמני מקומי</li>
+      <li><ic>{% block %} / {% endblock %}</ic> — חלון שדפי בן ממלאים</li>
+      <li><ic>{% extends %}</ic> — ירושת תבנית אם</li>
+      <li><ic>{{ url_for() }}</ic> — יצירת URL מבוסס שם פונקציה</li>
+    </ul>
+  </div>
+
+  <div class="card" style="border-color:rgba(232,121,249,0.4);background:rgba(232,121,249,0.04);">
+    <h2>🚀 משימת המשך</h2>
+    <p>פותחים את הפרויקט ומנסים:</p>
+    <br>
+    <p><strong>1.</strong> מוסיפים ב-users.html לולאה שמציגה גם מספר סידורי לצד כל שם — <ic>{% for i, user in enumerate(users) %}</ic> בJinja2 כתוב: <ic>{{ loop.index }}</ic></p>
+    <p><strong>2.</strong> מוסיפים ב-base.html הודעה ייחודית כשהרשימה ריקה: <ic>{% if users %} ... {% else %}&lt;p&gt;אין משתמשים{% endif %}</ic></p>
+    <p><strong>3.</strong> <strong>אתגר בונוס:</strong> מוסיפים ב-base.html תגית הערה Jinja2 <ic>{# #}</ic> שמסבירה את הלוגיקה של ה-if — ומוודאים שהיא לא מופיעה ב-DevTools</p>
+  </div>
+</div>
+
+<!-- Navigation -->
+<div class="btn-row">
+  <button class="btn btn-secondary" id="prevBtn" disabled>← הקודם</button>
+  <span class="slide-num" id="slideNum">1 / 10</span>
+  <button class="btn btn-primary" id="nextBtn">הבא ←</button>
+</div>
+</div>
+
+<script>
+const TOTAL = 10;
+let current = 1;
+const quizAnswered = {};
+
+const feedbacks = {
+  q1: {
+    correct: '✓ נכון! {{ }} מחליפה ביטוי בערך שלו בHTML. {% %} מריצה פקודות לוגיקה (if, for) שאינן מייצרות טקסט בפני עצמן.',
+    wrong: '✗ לא מדויק. {{ }} = הצגת ערך. {% %} = לוגיקה (if/for/block). אם כותבים {% user %} — שגיאה. רק {{ user }} מציגה ערך.'
+  },
+  q2: {
+    correct: '✓ מצוין! show_users() קורא render_template("users.html", user=current_user, users=valid_users). ה-users הוא הפרמטר השני.',
+    wrong: '✗ לא מדויק. Jinja2 לא יכולה לגשת למשתנים של Python ישירות. כל משתנה חייב להישלח מפורשות דרך render_template.'
+  },
+  q3: {
+    correct: '✓ נכון! Jinja2 מחליפה {{ user }} בערך האמיתי "alice" לפני שה-HTML נשלח לדפדפן. הדפדפן רואה רק "Welcome alice!".',
+    wrong: '✗ לא מדויק. Jinja2 מחליפה {{ user }} בערך בשרת. הדפדפן מקבל HTML נקי: "Welcome alice!" — ללא כל {{ }}.'
+  },
+  q4: {
+    correct: '✓ נכון! for על רשימה ריקה = אפס איטרציות. לא תיזרק שגיאה. הטבלה תוצג עם כותרות בלבד, ללא שורות נתונים.',
+    wrong: '✗ לא מדויק. Jinja2 מטפלת ברשימה ריקה בחינניות — הלולאה פשוט לא רצה ולא נוצרות שורות. אין שגיאה.'
+  },
+  q5: {
+    correct: '✓ בדיוק! ב-base.html {% block content %}{% endblock %} = "כאן יבוא תוכן מדף בן". ב-home.html = "זה התוכן שאני מכניס לחלון".',
+    wrong: '✗ לא מדויק. אותה תחביר, תפקיד שונה לחלוטין. ב-base: הגדרת חלון. בדף בן: מילוי החלון. Jinja2 מזהה את ההקשר לפי ה-extends.'
+  }
+};
+
+function initDots() {
+  const c = document.getElementById('navDots');
+  for (let i = 1; i <= TOTAL; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 1 ? ' active' : '');
+    d.id = 'dot-' + i;
+    c.appendChild(d);
+    d.addEventListener('click', (function(n){ return function(){ goTo(n); }; })(i));
+  }
+}
+
+function goTo(n) {
+  document.getElementById('slide-' + current).classList.remove('active');
+  document.getElementById('dot-' + current).classList.remove('active');
+  if (current < n) document.getElementById('dot-' + current).classList.add('completed');
+  current = n;
+  document.getElementById('slide-' + current).classList.add('active');
+  document.getElementById('dot-' + current).classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  updateUI();
+}
+
+function changeSlide(dir) {
+  const next = current + dir;
+  if (next < 1 || next > TOTAL) return;
+  goTo(next);
+}
+
+function updateUI() {
+  document.getElementById('prevBtn').disabled = current === 1;
+  document.getElementById('nextBtn').textContent = current === TOTAL ? '✓ סיום' : 'הבא ←';
+  document.getElementById('slideNum').textContent = current + ' / ' + TOTAL;
+  const pct = ((current - 1) / (TOTAL - 1)) * 100;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressText').textContent = 'שלב ' + current + ' מתוך ' + TOTAL;
+}
+
+function checkQuiz(el, isCorrect, qid) {
+  if (quizAnswered[qid]) return;
+  quizAnswered[qid] = true;
+  el.classList.add(isCorrect ? 'correct' : 'wrong');
+  const fb = document.getElementById(qid + '-fb');
+  fb.classList.add('show', isCorrect ? 'correct' : 'wrong');
+  fb.textContent = isCorrect ? feedbacks[qid].correct : feedbacks[qid].wrong;
+  if (!isCorrect) {
+    el.parentElement.querySelectorAll('.quiz-opt').forEach(function(opt) {
+      if (opt.getAttribute('onclick') && opt.getAttribute('onclick').includes('true')) opt.classList.add('correct');
+    });
+  }
+  document.querySelectorAll('#' + qid + '-card .quiz-opt').forEach(function(o) { o.classList.add('locked'); });
+}
+
+// ── Jinja2 Playground ──────────────────────────────────
+function runPlayground() {
+  const tmpl  = document.getElementById('pgTemplate').value;
+  const user  = document.getElementById('pgUser').value.trim();
+  const usersRaw = document.getElementById('pgUsers').value.trim();
+  const users = usersRaw ? usersRaw.split(',').map(function(s){ return s.trim(); }).filter(Boolean) : [];
+
+  let out = tmpl;
+
+  // Process {% if user == 'X' %} / {% elif %} / {% else %} / {% endif %}
+  out = out.replace(
+    /\{%[-\s]*if\s+(.*?)\s*%\}([\s\S]*?)\{%[-\s]*endif\s*[-]?%\}/g,
+    function(_, cond, body) {
+      // split on elif/else
+      const parts = body.split(/\{%[-\s]*(?:elif\s+.*?|else)\s*[-]?%\}/);
+      const conds = [cond];
+      const elseifRe = /\{%[-\s]*elif\s+(.*?)\s*[-]?%\}/g;
+      let m;
+      while ((m = elseifRe.exec(body)) !== null) conds.push(m[1]);
+      conds.push(null); // else
+
+      function evalCond(c) {
+        if (!c) return true;
+        const ctx = { user: user, users: users };
+        try {
+          return (function(user, users) { return eval(c.replace(/==/g,'===').replace(/!=/g,'!==')); })(ctx.user, ctx.users);
+        } catch(e) { return false; }
+      }
+
+      for (let i = 0; i < parts.length; i++) {
+        if (evalCond(conds[i])) return parts[i];
+      }
+      return '';
+    }
+  );
+
+  // Process {% for x in users %} ... {% endfor %}
+  out = out.replace(
+    /\{%[-\s]*for\s+(\w+)\s+in\s+(\w+)\s*%\}([\s\S]*?)\{%[-\s]*endfor\s*[-]?%\}/g,
+    function(_, varName, listName, body) {
+      const list = listName === 'users' ? users : [];
+      if (!list.length) return '';
+      return list.map(function(item) {
+        return body.replace(new RegExp('\\{\\{\\s*' + varName + '\\s*\\}\\}', 'g'), item)
+                   .replace(/\{\{[\s]*loop\.index[\s]*\}\}/g, function(_, i){ return list.indexOf(item)+1; });
+      }).join('');
+    }
+  );
+
+  // Process {{ var }}
+  out = out.replace(/\{\{\s*user\s*\}\}/g, user);
+  out = out.replace(/\{\{\s*users\s*\}\}/g, '[' + users.join(', ') + ']');
+
+  // Remove remaining jinja tags
+  out = out.replace(/\{[%#][^%#]*[%#]\}/g, '');
+  out = out.replace(/\{\{[^}]*\}\}/g, '');
+
+  // Clean up extra blank lines
+  out = out.replace(/\n{3,}/g, '\n\n').trim();
+
+  document.getElementById('pgOutput').textContent = out || '(פלט ריק)';
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  initDots();
+  updateUI();
+  document.getElementById('prevBtn').addEventListener('click', function() { changeSlide(-1); });
+  document.getElementById('nextBtn').addEventListener('click', function() { changeSlide(1); });
+  document.getElementById('pgRun').addEventListener('click', runPlayground);
+  // auto-run on load
+  runPlayground();
+});
+</script>
+</body>
+</html>

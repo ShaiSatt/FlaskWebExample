@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>לומדה: מבנה פרויקט Flask</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;600;700;900&family=Fira+Code:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #050b14;
+    --grid: rgba(30,100,200,0.07);
+    --surface: #08111e;
+    --surface2: #0d1a2e;
+    --surface3: #112238;
+    --accent: #00d4ff;
+    --accent2: #ff6b35;
+    --accent3: #7fff6e;
+    --warn: #ffd166;
+    --text: #c8ddf0;
+    --text-muted: #4a7090;
+    --border: #0f2a42;
+    --border-bright: #1a4060;
+    --code-bg: #03080f;
+    --glow: rgba(0,212,255,0.15);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Heebo', sans-serif;
+    background-color: var(--bg);
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 40px 40px;
+    color: var(--text);
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+
+  /* ── Hero ─────────────────────────────── */
+  .hero {
+    padding: 3.5rem 2rem 2.5rem;
+    text-align: center;
+    position: relative;
+    border-bottom: 1px solid var(--border-bright);
+    background: linear-gradient(180deg, rgba(0,212,255,0.04) 0%, transparent 100%);
+  }
+  .hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 50% 0%, rgba(0,212,255,0.1) 0%, transparent 65%);
+    pointer-events: none;
+  }
+  .badge {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    padding: 0.25rem 0.9rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    margin-bottom: 1.5rem;
+    background: rgba(0,212,255,0.05);
+  }
+  .badge::before { content: '//'; color: var(--text-muted); }
+  .hero h1 {
+    font-family: 'Space Mono', monospace;
+    font-size: clamp(1.8rem, 4vw, 2.8rem);
+    font-weight: 700;
+    line-height: 1.15;
+    margin-bottom: 1rem;
+    letter-spacing: -0.02em;
+  }
+  .hero h1 .dim { color: var(--text-muted); }
+  .hero h1 .lit { color: var(--accent); }
+  .hero p {
+    color: var(--text-muted);
+    font-size: 1rem;
+    max-width: 520px;
+    margin: 0 auto;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.82rem;
+    line-height: 1.8;
+  }
+
+  /* ── Progress ─────────────────────────── */
+  .progress-container {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border-bright);
+    padding: 0.8rem 2rem;
+    display: flex; align-items: center; gap: 1rem;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .progress-label { font-family: 'Space Mono', monospace; font-size: 0.7rem; color: var(--text-muted); white-space: nowrap; }
+  .progress-bar { flex: 1; height: 3px; background: var(--border); border-radius: 999px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent3)); border-radius: 999px; transition: width 0.5s ease; width: 0%; }
+
+  /* ── Nav dots ─────────────────────────── */
+  .nav-dots { display: flex; justify-content: center; gap: 0.6rem; padding: 1rem; flex-wrap: wrap; }
+  .dot {
+    width: 10px; height: 10px;
+    border: 1px solid var(--border-bright);
+    border-radius: 2px;
+    cursor: pointer; transition: all 0.25s;
+    background: transparent;
+  }
+  .dot.active { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 8px var(--accent); }
+  .dot.completed { background: var(--accent3); border-color: var(--accent3); }
+
+  .container { max-width: 920px; margin: 0 auto; padding: 0 1.5rem; }
+  .slide { display: none; animation: fadeIn 0.3s ease; }
+  .slide.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ── Cards ────────────────────────────── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border-bright);
+    border-radius: 8px;
+    padding: 1.8rem;
+    margin-bottom: 1.2rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute; top: 0; right: 0;
+    width: 60%; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: 0.5;
+  }
+  .card.cyan  { border-color: rgba(0,212,255,0.4); }
+  .card.orange{ border-color: rgba(255,107,53,0.4); }
+  .card.green { border-color: rgba(127,255,110,0.4); }
+  .card.warn  { border-color: rgba(255,209,102,0.35); }
+  .card h2 {
+    font-family: 'Space Mono', monospace;
+    font-size: 1.1rem; font-weight: 700;
+    margin-bottom: 1rem;
+    display: flex; align-items: center; gap: 0.6rem;
+    color: var(--accent);
+    letter-spacing: -0.01em;
+  }
+  .card h2 .icon { color: var(--text); }
+  .card h3 {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.85rem; font-weight: 700;
+    margin: 1.2rem 0 0.6rem;
+    color: var(--accent2);
+    letter-spacing: 0.03em;
+  }
+  .card p { color: #7a9ab8; margin-bottom: 0.7rem; font-size: 0.95rem; }
+
+  /* ── Code ─────────────────────────────── */
+  .code-block {
+    background: var(--code-bg);
+    border: 1px solid var(--border-bright);
+    border-radius: 6px;
+    overflow: hidden;
+    margin: 0.9rem 0;
+    font-family: 'Fira Code', monospace;
+  }
+  .code-header {
+    background: var(--surface2);
+    padding: 0.45rem 0.9rem;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+  }
+  .code-fn { font-size: 0.72rem; color: var(--text-muted); font-family: 'Space Mono', monospace; }
+  .code-fn .nm { color: var(--accent2); }
+  .dots3 { display: flex; gap: 4px; }
+  .d1{width:8px;height:8px;border-radius:50%;background:#ff5f57;}
+  .d2{width:8px;height:8px;border-radius:50%;background:#febc2e;}
+  .d3{width:8px;height:8px;border-radius:50%;background:#28c840;}
+  .code-body { padding: 1rem 1.2rem; overflow-x: auto; font-size: 0.82rem; line-height: 1.95; direction: ltr; text-align: left; }
+  .code-body pre { white-space: pre; }
+
+  /* syntax */
+  .kw  { color: #c792ea; }
+  .fn  { color: #82aaff; }
+  .str { color: #c3e88d; }
+  .dec { color: #00d4ff; font-weight: 600; }   /* decorator */
+  .num { color: #f78c6c; }
+  .comment { color: #3d5a70; font-style: italic; }
+  .jinja { color: #ffd166; font-weight: 600; }
+  .j-var { color: #ff9cac; }
+  .tag   { color: #89ddff; }
+  .attr  { color: #c3e88d; }
+
+  .hl-c { background: rgba(0,212,255,0.08);  display: block; margin: 0 -1.2rem; padding: 0 1.2rem; border-right: 3px solid var(--accent); }
+  .hl-o { background: rgba(255,107,53,0.08); display: block; margin: 0 -1.2rem; padding: 0 1.2rem; border-right: 3px solid var(--accent2); }
+  .hl-g { background: rgba(127,255,110,0.07);display: block; margin: 0 -1.2rem; padding: 0 1.2rem; border-right: 3px solid var(--accent3); }
+  .hl-w { background: rgba(255,209,102,0.07);display: block; margin: 0 -1.2rem; padding: 0 1.2rem; border-right: 3px solid var(--warn); }
+
+  /* ── File tree ────────────────────────── */
+  .file-tree {
+    background: var(--code-bg);
+    border: 1px solid var(--border-bright);
+    border-radius: 6px;
+    padding: 1.1rem 1.3rem;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.83rem;
+    direction: ltr; text-align: left;
+    margin: 0.9rem 0;
+  }
+  .tl { line-height: 2.1; display: flex; align-items: center; gap: 0.5rem; }
+  .tl .pipe { color: var(--border-bright); }
+  .tf { color: var(--text-muted); }
+  .tf.hl  { color: var(--accent);  font-weight: 600; }
+  .tf.hl2 { color: var(--accent2); font-weight: 600; }
+  .tf.hl3 { color: var(--accent3); font-weight: 600; }
+  .tf.dim { color: #2a4560; }
+  .td { color: var(--accent2); font-weight: 600; }
+  .tl .note { font-size: 0.7rem; color: var(--accent); margin-right: 0.4rem; opacity: 0.8; }
+
+  /* ── Route map ────────────────────────── */
+  .route-table { width: 100%; border-collapse: collapse; margin: 0.9rem 0; font-size: 0.85rem; }
+  .route-table th {
+    background: var(--surface2);
+    padding: 0.6rem 1rem; text-align: right;
+    font-family: 'Space Mono', monospace; font-size: 0.72rem;
+    color: var(--text-muted); font-weight: 700; letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--border-bright);
+  }
+  .route-table td { padding: 0.6rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .route-table tr:last-child td { border-bottom: none; }
+  .route-table td:first-child { font-family: 'Fira Code', monospace; font-size: 0.8rem; color: var(--accent); white-space: nowrap; }
+  .method-pill {
+    display: inline-block; padding: 0.15rem 0.5rem; border-radius: 3px;
+    font-family: 'Space Mono', monospace; font-size: 0.68rem; font-weight: 700;
+    margin-left: 0.2rem;
+  }
+  .mp-g  { background: rgba(127,255,110,0.15); color: var(--accent3); border: 1px solid rgba(127,255,110,0.3); }
+  .mp-o  { background: rgba(255,107,53,0.15);  color: var(--accent2); border: 1px solid rgba(255,107,53,0.3); }
+  .route-fn { font-family: 'Fira Code', monospace; font-size: 0.78rem; color: var(--accent2); }
+  .route-desc { color: #5a80a0; font-size: 0.83rem; }
+
+  /* ── Annotated lines ──────────────────── */
+  .ann {
+    display: flex; align-items: flex-start; gap: 0.8rem;
+    margin: 0.5rem 0; padding: 0.65rem 0.9rem;
+    background: var(--surface2); border-radius: 6px;
+    border-right: 3px solid var(--accent); font-size: 0.88rem;
+  }
+  .ann.o { border-color: var(--accent2); }
+  .ann.g { border-color: var(--accent3); }
+  .ann.w { border-color: var(--warn); }
+  .ann code { font-family: 'Fira Code', monospace; font-size: 0.79rem; background: var(--code-bg); padding: 0.15rem 0.45rem; border-radius: 4px; color: var(--accent); white-space: nowrap; flex-shrink: 0; }
+  .ann.o code { color: var(--accent2); }
+  .ann.g code { color: var(--accent3); }
+  .ann.w code { color: var(--warn); }
+  .ann .desc { color: #5a80a0; font-size: 0.86rem; }
+  .ann .desc strong { color: var(--text); }
+
+  /* ── Callout ──────────────────────────── */
+  .callout {
+    padding: 0.8rem 1rem; border-radius: 6px; margin: 0.8rem 0;
+    font-size: 0.88rem; display: flex; gap: 0.7rem; align-items: flex-start;
+  }
+  .callout.c { background: rgba(0,212,255,0.06);  border: 1px solid rgba(0,212,255,0.2); }
+  .callout.o { background: rgba(255,107,53,0.06); border: 1px solid rgba(255,107,53,0.2); }
+  .callout.g { background: rgba(127,255,110,0.05);border: 1px solid rgba(127,255,110,0.2); }
+  .callout.w { background: rgba(255,209,102,0.05);border: 1px solid rgba(255,209,102,0.2); }
+  .callout .icon { font-size: 1rem; flex-shrink: 0; margin-top: 0.05rem; }
+  .callout .body { color: #5a80a0; }
+  .callout .body strong { color: var(--text); }
+
+  /* ── Two col ──────────────────────────── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 0.9rem 0; }
+  .col-head { font-family: 'Space Mono', monospace; font-size: 0.72rem; font-weight: 700; margin-bottom: 0.5rem; padding: 0.3rem 0.7rem; border-radius: 4px; display: inline-block; letter-spacing: 0.05em; }
+  .col-head.c { background: rgba(0,212,255,0.1);  color: var(--accent); }
+  .col-head.o { background: rgba(255,107,53,0.1); color: var(--accent2); }
+  .col-head.g { background: rgba(127,255,110,0.1);color: var(--accent3); }
+  .col-head.w { background: rgba(255,209,102,0.1);color: var(--warn); }
+
+  /* ── Request flow diagram ─────────────── */
+  .flow-diagram {
+    display: flex; align-items: stretch;
+    border: 1px solid var(--border-bright); border-radius: 8px; overflow: hidden;
+    margin: 1rem 0; background: var(--code-bg);
+  }
+  .flow-box {
+    flex: 1; padding: 1rem 0.7rem; text-align: center;
+    display: flex; flex-direction: column; align-items: center; gap: 0.35rem;
+    border-left: 1px solid var(--border-bright); position: relative;
+  }
+  .flow-box:last-child { border-left: none; }
+  .flow-box .fb-num {
+    width: 20px; height: 20px; border-radius: 50%;
+    background: var(--accent); color: var(--bg);
+    font-size: 0.68rem; font-weight: 900; font-family: 'Space Mono', monospace;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .flow-box.hi { background: rgba(0,212,255,0.05); }
+  .flow-box .fb-title { font-family: 'Space Mono', monospace; font-size: 0.75rem; font-weight: 700; color: var(--text); }
+  .flow-box .fb-sub { font-size: 0.7rem; color: var(--text-muted); line-height: 1.4; font-family: 'Fira Code', monospace; }
+
+  /* ── Interactive: click-a-route ──────── */
+  .route-explorer { margin: 1rem 0; }
+  .re-btns { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
+  .re-btn {
+    font-family: 'Fira Code', monospace; font-size: 0.8rem;
+    background: var(--surface2); border: 1px solid var(--border-bright);
+    color: var(--text-muted); padding: 0.4rem 0.9rem; border-radius: 4px;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .re-btn:hover  { border-color: var(--accent); color: var(--accent); background: rgba(0,212,255,0.06); }
+  .re-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(0,212,255,0.1); box-shadow: 0 0 12px rgba(0,212,255,0.15); }
+  .re-detail {
+    background: var(--code-bg); border: 1px solid var(--border-bright);
+    border-radius: 6px; padding: 1.2rem; min-height: 120px;
+    transition: all 0.25s;
+  }
+  .re-detail .re-url { font-family: 'Space Mono', monospace; font-size: 0.8rem; color: var(--accent); margin-bottom: 0.5rem; }
+  .re-detail .re-methods { margin-bottom: 0.7rem; }
+  .re-detail .re-fn { font-family: 'Fira Code', monospace; font-size: 0.82rem; color: var(--accent2); margin-bottom: 0.7rem; }
+  .re-detail .re-desc { color: #5a80a0; font-size: 0.88rem; line-height: 1.6; }
+  .re-detail .re-code { margin-top: 0.8rem; font-family: 'Fira Code', monospace; font-size: 0.78rem; background: var(--surface2); padding: 0.7rem 0.9rem; border-radius: 4px; color: var(--text); line-height: 1.8; direction: ltr; text-align: left; }
+
+  /* ── Checklist ────────────────────────── */
+  .checklist { list-style: none; }
+  .checklist li {
+    padding: 0.5rem 0; border-bottom: 1px solid var(--border);
+    display: flex; align-items: flex-start; gap: 0.7rem;
+    font-size: 0.9rem; color: #5a80a0;
+  }
+  .checklist li::before { content: '→'; color: var(--accent); font-family: 'Space Mono', monospace; font-weight: 700; flex-shrink: 0; margin-top: 0.05rem; }
+
+  /* ── Quiz ─────────────────────────────── */
+  .quiz-q { font-family: 'Space Mono', monospace; font-size: 0.88rem; font-weight: 700; color: var(--text); margin-bottom: 0.9rem; line-height: 1.5; }
+  .quiz-options { display: flex; flex-direction: column; gap: 0.55rem; }
+  .quiz-opt {
+    background: var(--surface2); border: 1px solid var(--border-bright);
+    border-radius: 6px; padding: 0.7rem 1rem; cursor: pointer;
+    transition: all 0.2s; font-size: 0.85rem;
+    direction: ltr; text-align: left; font-family: 'Fira Code', monospace;
+  }
+  .quiz-opt.rtl { direction: rtl; text-align: right; font-family: 'Heebo', sans-serif; font-size: 0.9rem; }
+  .quiz-opt:hover:not(.locked) { border-color: var(--accent); background: rgba(0,212,255,0.06); color: var(--text); }
+  .quiz-opt.correct { border-color: var(--accent3); background: rgba(127,255,110,0.08); color: var(--accent3); }
+  .quiz-opt.wrong   { border-color: var(--accent2); background: rgba(255,107,53,0.08);  color: var(--accent2); }
+  .quiz-feedback { margin-top: 0.9rem; padding: 0.8rem; border-radius: 6px; display: none; font-size: 0.87rem; font-family: 'Heebo', sans-serif; }
+  .quiz-feedback.show { display: block; }
+  .quiz-feedback.correct { background: rgba(127,255,110,0.07); border: 1px solid rgba(127,255,110,0.25); color: var(--accent3); }
+  .quiz-feedback.wrong   { background: rgba(255,107,53,0.07);  border: 1px solid rgba(255,107,53,0.25);  color: var(--accent2); }
+
+  ic { font-family: 'Fira Code', monospace; font-size: 0.85em; background: var(--surface2); padding: 0.1em 0.4em; border-radius: 3px; color: var(--accent); }
+  .hl  { color: var(--accent);  font-weight: 600; }
+  .hl2 { color: var(--accent2); font-weight: 600; }
+  .hl3 { color: var(--accent3); font-weight: 600; }
+  .hlw { color: var(--warn);    font-weight: 600; }
+
+  /* ── Nav buttons ──────────────────────── */
+  .btn-row { display: flex; justify-content: space-between; align-items: center; padding: 2rem 0 3rem; gap: 1rem; }
+  .btn {
+    padding: 0.65rem 1.6rem; border-radius: 5px; border: 1px solid;
+    cursor: pointer; font-size: 0.88rem; font-family: 'Space Mono', monospace;
+    font-weight: 700; transition: all 0.2s; letter-spacing: 0.03em;
+  }
+  .btn-primary { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+  .btn-primary:hover { background: #33ddff; box-shadow: 0 0 20px rgba(0,212,255,0.4); transform: translateY(-1px); }
+  .btn-secondary { background: transparent; color: var(--text-muted); border-color: var(--border-bright); }
+  .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+  .slide-num { font-family: 'Space Mono', monospace; font-size: 0.75rem; color: var(--text-muted); }
+
+  .completion { text-align: center; padding: 3rem 1rem; }
+  .completion .trophy { font-size: 4rem; margin-bottom: 1rem; filter: drop-shadow(0 0 20px rgba(0,212,255,0.5)); }
+  .completion h2 { font-family: 'Space Mono', monospace; font-size: 1.6rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--accent); }
+  .completion p { color: var(--text-muted); font-family: 'Space Mono', monospace; font-size: 0.82rem; }
+
+  @media (max-width: 640px) {
+    .two-col { grid-template-columns: 1fr; }
+    .flow-diagram { flex-direction: column; }
+    .flow-box { border-left: none; border-top: 1px solid var(--border-bright); }
+    .btn-row { flex-direction: column; }
+    .btn { width: 100%; justify-content: center; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="badge">PROJECT OVERVIEW — FLASK WEB APP — MEGIDO HIGH SCHOOL</div>
+  <h1>
+    <span class="dim">flask_project/</span><br>
+    <span class="lit">מבנה, ניתוב ו-main.py</span>
+  </h1>
+  <p>// מבט-על על הפרויקט — קבצים, תיקיות, routes, וכיצד כל החלקים מתחברים</p>
+</div>
+
+<div class="progress-container">
+  <div class="progress-label" id="progressText">[ 01 / 09 ]</div>
+  <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+</div>
+
+<div class="nav-dots" id="navDots"></div>
+<div class="container">
+
+<!-- ═══════════════════════════ SLIDE 1 ═══ -->
+<div class="slide active" id="slide-1">
+  <div class="card cyan">
+    <h2><span class="icon">📂</span> מבנה קבצי הפרויקט</h2>
+    <p>פרויקט Flask מאורגן לפי מוסכמה קבועה. כך נראה עץ הקבצים שלנו:</p>
+  </div>
+
+  <div class="file-tree">
+    <div class="tl"><span class="td">FlaskWebExample/</span><span class="note">← תיקיית שורש</span></div>
+    <div class="tl"><span class="pipe">│</span></div>
+    <div class="tl"><span class="pipe">├──</span> <span class="tf hl2">main.py</span> <span class="note">← נקודת הכניסה לאפליקציה</span></div>
+    <div class="tl"><span class="pipe">│</span></div>
+    <div class="tl"><span class="pipe">├──</span> <span class="td">templates/</span> <span class="note">← כל קבצי ה-HTML</span></div>
+    <div class="tl"><span class="pipe">│&nbsp;&nbsp; ├──</span> <span class="tf hl">base.html</span> <span class="note">← התבנית האם</span></div>
+    <div class="tl"><span class="pipe">│&nbsp;&nbsp; ├──</span> <span class="tf hl3">home.html</span></div>
+    <div class="tl"><span class="pipe">│&nbsp;&nbsp; ├──</span> <span class="tf hl3">login.html</span></div>
+    <div class="tl"><span class="pipe">│&nbsp;&nbsp; ├──</span> <span class="tf hl3">signup.html</span></div>
+    <div class="tl"><span class="pipe">│&nbsp;&nbsp; ├──</span> <span class="tf hl3">users.html</span></div>
+    <div class="tl"><span class="pipe">│&nbsp;&nbsp; └──</span> <span class="tf hl3">restricted.html</span></div>
+    <div class="tl"><span class="pipe">│</span></div>
+    <div class="tl"><span class="pipe">└──</span> <span class="td">static/</span> <span class="note">← קבצים סטטיים (CSS, JS, תמונות)</span></div>
+    <div class="tl"><span class="pipe">&nbsp;&nbsp;&nbsp; ├──</span> <span class="td">css/</span></div>
+    <div class="tl"><span class="pipe">&nbsp;&nbsp;&nbsp; │&nbsp;&nbsp; └──</span> <span class="tf">style.css</span></div>
+    <div class="tl"><span class="pipe">&nbsp;&nbsp;&nbsp; ├──</span> <span class="td">script/</span></div>
+    <div class="tl"><span class="pipe">&nbsp;&nbsp;&nbsp; │&nbsp;&nbsp; └──</span> <span class="tf">signupvalidation.js</span></div>
+    <div class="tl"><span class="pipe">&nbsp;&nbsp;&nbsp; └──</span> <span class="td">images/</span></div>
+    <div class="tl"><span class="pipe">&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; └──</span> <span class="tf">nivut.jpg</span></div>
+  </div>
+
+  <div class="card">
+    <h3>// שלוש תיקיות מרכזיות</h3>
+    <div class="ann">
+      <code>main.py</code>
+      <div class="desc"><strong>מוח האפליקציה</strong> — מגדיר routes, מטפל בבקשות, מחזיר תגובות. Flask קורא לו כנקודת הכניסה.</div>
+    </div>
+    <div class="ann o">
+      <code>templates/</code>
+      <div class="desc"><strong>Flask מחפש HTML כאן</strong> — render_template() מחפש קבצים בתיקייה זו אוטומטית. שם חובה!</div>
+    </div>
+    <div class="ann g">
+      <code>static/</code>
+      <div class="desc"><strong>CSS, JS, תמונות</strong> — קבצים שנשלחים ישירות לדפדפן ללא עיבוד. נגישים דרך /static/...</div>
+    </div>
+
+    <div class="callout w" style="margin-top:1rem;">
+      <span class="icon">⚠️</span>
+      <div class="body"><strong>חשוב:</strong> Flask ידרוש שקבצי HTML ייקראו templates ו-CSS/JS ייקראו static — אלה שמות שמורים.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>// מה נלמד בלומדה זו?</h3>
+    <ul class="checklist">
+      <li>מבנה הפרויקט — אילו קבצים ולמה</li>
+      <li>main.py שלב אחר שלב — Flask, routes, משתנים גלובליים</li>
+      <li>ניתוב (Routing) — כיצד URL מגיע לפונקציה הנכונה</li>
+      <li>מחזור הבקשה-תגובה — מהדפדפן ועד ה-HTML</li>
+      <li>render_template ו-redirect — שתי דרכי התגובה</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ SLIDE 2 ═══ -->
+<div class="slide" id="slide-2">
+  <div class="card cyan">
+    <h2><span class="icon">🐍</span> main.py — מבנה כללי</h2>
+    <p>main.py הוא הקובץ המרכזי של האפליקציה. נפרק אותו לארבעה חלקים:</p>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header">
+      <div class="code-fn"><span class="nm">main.py</span> — מבנה כללי</div>
+      <div class="dots3"><div class="d1"></div><div class="d2"></div><div class="d3"></div></div>
+    </div>
+    <div class="code-body"><pre><span class="comment"># ═══════════════════════════════════════
+# חלק 1 — ייבוא ספריות
+# ═══════════════════════════════════════</span>
+<span class="hl-c"><span class="kw">from</span> flask <span class="kw">import</span> Flask, render_template, request, redirect, url_for, flash</span>
+
+<span class="comment"># ═══════════════════════════════════════
+# חלק 2 — אתחול האפליקציה ומשתנים גלובליים
+# ═══════════════════════════════════════</span>
+<span class="hl-o">app = Flask(__name__)
+app.secret_key = <span class="str">"megido_secret_key"</span>
+valid_users = []
+current_user = <span class="str">'Guest'</span></span>
+
+<span class="comment"># ═══════════════════════════════════════
+# חלק 3 — Routes (פונקציות לכל URL)
+# ═══════════════════════════════════════</span>
+<span class="hl-g"><span class="dec">@app.route</span>(<span class="str">'/'</span>)
+<span class="kw">def</span> <span class="fn">home</span>():
+    ...
+<span class="comment"># + login, logout, restricted, signup, users</span></span>
+
+<span class="comment"># ═══════════════════════════════════════
+# חלק 4 — הפעלת השרת
+# ═══════════════════════════════════════</span>
+<span class="hl-w"><span class="kw">if</span> __name__ == <span class="str">'__main__'</span>:
+    app.<span class="fn">run</span>(debug=<span class="kw">True</span>)</span></pre></div>
+  </div>
+
+  <div class="card">
+    <h3>// פירוק כל חלק</h3>
+    <div class="ann">
+      <code>from flask import ...</code>
+      <div class="desc"><strong>ייבוא</strong> — טוענים את הכלים שנשתמש בהם מספריית Flask. כל פונקציה שנשתמש בה חייבת להיות כאן.</div>
+    </div>
+    <div class="ann o">
+      <code>app = Flask(__name__)</code>
+      <div class="desc"><strong>יצירת האפליקציה</strong> — <ic>__name__</ic> הוא שם הקובץ הנוכחי. Flask משתמש בו כדי למצוא את תיקיית templates ו-static.</div>
+    </div>
+    <div class="ann g">
+      <code>@app.route('/') def home():</code>
+      <div class="desc"><strong>Route</strong> — קושר בין URL לפונקציה. כשדפדפן פותח '/', Flask קורא ל-home().</div>
+    </div>
+    <div class="ann w">
+      <code>if __name__ == '__main__': app.run()</code>
+      <div class="desc"><strong>הפעלה</strong> — מריץ את השרת רק כשמפעילים את הקובץ ישירות (לא כשמייבאים). debug=True מאפשר רענון אוטומטי.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ SLIDE 3 ═══ -->
+<div class="slide" id="slide-3">
+  <div class="card cyan">
+    <h2><span class="icon">📦</span> ייבואים ומשתנים גלובליים</h2>
+    <p>נתמקד בשני הבלוקים הראשונים — מה מייבאים ולמה, ומה המשתנים הגלובליים עושים:</p>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header"><div class="code-fn">ייבואים</div><div class="dots3"><div class="d1"></div><div class="d2"></div><div class="d3"></div></div></div>
+    <div class="code-body"><pre><span class="kw">from</span> flask <span class="kw">import</span>
+    <span class="hl-c">Flask,</span>           <span class="comment">← המחלקה הראשית — יוצרת את האפליקציה</span>
+    <span class="hl-c">render_template,</span> <span class="comment">← ממזג HTML עם Jinja2 ומחזיר לדפדפן</span>
+    <span class="hl-o">request,</span>         <span class="comment">← גישה לנתוני הבקשה: form, method, args</span>
+    <span class="hl-o">redirect,</span>        <span class="comment">← מפנה הדפדפן ל-URL אחר (302)</span>
+    <span class="hl-g">url_for,</span>         <span class="comment">← מייצר URL לפי שם פונקציה</span>
+    <span class="hl-w">flash</span>            <span class="comment">← שומר הודעה זמנית ב-Session</span></pre></div>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header"><div class="code-fn">משתנים גלובליים</div><div class="dots3"><div class="d1"></div><div class="d2"></div><div class="d3"></div></div></div>
+    <div class="code-body"><pre>app = Flask(__name__)
+<span class="hl-w">app.secret_key = <span class="str">"megido_secret_key"</span></span>  <span class="comment">← חובה ל-flash + session</span>
+
+<span class="comment"># # try try  ← הערה שנשארה מהפיתוח</span>
+<span class="comment"># מסד נתונים פשוט — רשימה בזיכרון</span>
+<span class="hl-c">valid_users = []</span>        <span class="comment">← שמות כל המשתמשים הרשומים</span>
+
+<span class="comment"># מצב ההתחברות הנוכחי</span>
+<span class="hl-o">current_user = <span class="str">'Guest'</span></span>  <span class="comment">← מי מחובר כרגע? מתחיל כאורח</span></pre></div>
+  </div>
+
+  <div class="card">
+    <div class="callout w">
+      <span class="icon">⚠️</span>
+      <div class="body"><strong>מגבלה של הפרויקט:</strong> valid_users ו-current_user נשמרים בזיכרון בלבד. כשמפסיקים את השרת — כל הנתונים אובדים! בפרויקט אמיתי משתמשים ב-Database.</div>
+    </div>
+    <div class="callout c">
+      <span class="icon">💡</span>
+      <div class="body"><strong>global:</strong> בפונקציות שמשנות את current_user (login, logout) חייבים לכתוב <ic>global current_user</ic> כדי לגשת למשתנה הגלובלי ולא ליצור משתנה מקומי חדש.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ SLIDE 4 ═══ -->
+<div class="slide" id="slide-4">
+  <div class="card cyan">
+    <h2><span class="icon">🗺️</span> ניתוב — Routes</h2>
+    <p>Route הוא הקשר בין כתובת URL לפונקציה Python. ה-decorator <ic>@app.route</ic> הוא מה שיוצר את הקשר הזה.</p>
+  </div>
+
+  <div class="route-table">
+    <tr>
+      <th>URL</th><th>Methods</th><th>פונקציה</th><th>תיאור</th>
+    </tr>
+    <tr>
+      <td>/</td>
+      <td><span class="method-pill mp-g">GET</span></td>
+      <td class="route-fn">home()</td>
+      <td class="route-desc">דף הבית — מציג home.html</td>
+    </tr>
+    <tr>
+      <td>/login</td>
+      <td><span class="method-pill mp-g">GET</span><span class="method-pill mp-o">POST</span></td>
+      <td class="route-fn">login()</td>
+      <td class="route-desc">GET: מציג טופס. POST: מעבד התחברות</td>
+    </tr>
+    <tr>
+      <td>/logout</td>
+      <td><span class="method-pill mp-g">GET</span></td>
+      <td class="route-fn">logout()</td>
+      <td class="route-desc">מאפס current_user ל-Guest ומפנה לבית</td>
+    </tr>
+    <tr>
+      <td>/restricted</td>
+      <td><span class="method-pill mp-g">GET</span></td>
+      <td class="route-fn">restricted()</td>
+      <td class="route-desc">מוגן — רק למשתמשים מחוברים</td>
+    </tr>
+    <tr>
+      <td>/signup</td>
+      <td><span class="method-pill mp-g">GET</span><span class="method-pill mp-o">POST</span></td>
+      <td class="route-fn">signup()</td>
+      <td class="route-desc">GET: מציג טופס. POST: רושם משתמש חדש</td>
+    </tr>
+    <tr>
+      <td>/users</td>
+      <td><span class="method-pill mp-g">GET</span></td>
+      <td class="route-fn">show_users()</td>
+      <td class="route-desc">מציג רשימת כל המשתמשים הרשומים</td>
+    </tr>
+  </div>
+
+  <div class="card">
+    <h3>// כיצד decorator עובד?</h3>
+    <div class="code-block">
+      <div class="code-body"><pre><span class="comment"># ← decorator: רץ לפני הגדרת הפונקציה</span>
+<span class="hl-c"><span class="dec">@app.route</span>(<span class="str">'/'</span>)</span>
+<span class="kw">def</span> <span class="fn">home</span>():
+    <span class="kw">return</span> <span class="fn">render_template</span>(<span class="str">'home.html'</span>, user=current_user)
+
+<span class="comment"># ← route עם שיטות מרובות</span>
+<span class="hl-o"><span class="dec">@app.route</span>(<span class="str">'/login'</span>, methods=[<span class="str">'GET'</span>, <span class="str">'POST'</span>])</span>
+<span class="kw">def</span> <span class="fn">login</span>():
+    <span class="kw">if</span> request.method == <span class="str">'POST'</span>:
+        ...   <span class="comment">← עיבוד טופס</span>
+    <span class="kw">return</span> <span class="fn">render_template</span>(<span class="str">'login.html'</span>, user=current_user, message=<span class="str">''</span>)</pre></div>
+    </div>
+    <div class="ann">
+      <code>@app.route('/')</code>
+      <div class="desc"><strong>decorator</strong> — "עוטף" את הפונקציה ורושם אותה אצל Flask. כשמגיעה בקשה ל-'/', Flask ידע לקרוא ל-home().</div>
+    </div>
+    <div class="ann o">
+      <code>methods=['GET', 'POST']</code>
+      <div class="desc">ברירת מחדל: רק GET. עבור routes שמקבלים טפסים — חייבים להוסיף POST. בלעדיו Flask יחזיר שגיאה 405.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ SLIDE 5 ═══ -->
+<div class="slide" id="slide-5">
+  <div class="card cyan">
+    <h2><span class="icon">🔍</span> סייר Routes — לחצו לפרטים</h2>
+    <p>לחצו על כל route כדי לראות את הקוד הרלוונטי מ-main.py ואת הלוגיקה שלו:</p>
+  </div>
+
+  <div class="route-explorer">
+    <div class="re-btns">
+      <button class="re-btn active" data-route="home">GET /</button>
+      <button class="re-btn" data-route="login">GET+POST /login</button>
+      <button class="re-btn" data-route="logout">GET /logout</button>
+      <button class="re-btn" data-route="restricted">GET /restricted</button>
+      <button class="re-btn" data-route="signup">GET+POST /signup</button>
+      <button class="re-btn" data-route="users">GET /users</button>
+    </div>
+    <div class="re-detail" id="reDetail"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ SLIDE 6 ═══ -->
+<div class="slide" id="slide-6">
+  <div class="card cyan">
+    <h2><span class="icon">🔄</span> מחזור הבקשה-תגובה</h2>
+    <p>מה קורה בדיוק בין רגע שמקלידים URL בדפדפן לבין רגע שהדף מופיע על המסך?</p>
+  </div>
+
+  <div class="flow-diagram">
+    <div class="flow-box">
+      <div class="fb-num">1</div>
+      <div class="fb-title">דפדפן</div>
+      <div class="fb-sub">HTTP Request<br>GET /users</div>
+    </div>
+    <div class="flow-box hi">
+      <div class="fb-num">2</div>
+      <div class="fb-title">Flask Router</div>
+      <div class="fb-sub">מוצא את<br>show_users()</div>
+    </div>
+    <div class="flow-box">
+      <div class="fb-num">3</div>
+      <div class="fb-title">Python</div>
+      <div class="fb-sub">מריץ הפונקציה<br>קורא render_template</div>
+    </div>
+    <div class="flow-box hi">
+      <div class="fb-num">4</div>
+      <div class="fb-title">Jinja2</div>
+      <div class="fb-sub">ממזג users.html<br>+ base.html + נתונים</div>
+    </div>
+    <div class="flow-box">
+      <div class="fb-num">5</div>
+      <div class="fb-title">דפדפן</div>
+      <div class="fb-sub">HTTP Response<br>HTML מוכן</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>// render_template לעומת redirect</h3>
+    <div class="two-col">
+      <div>
+        <div class="col-head c">render_template()</div>
+        <div class="code-block">
+          <div class="code-body"><pre><span class="kw">return</span> <span class="fn">render_template</span>(
+    <span class="str">'home.html'</span>,
+    user=current_user
+)
+<span class="comment"># ↑ מחזיר HTML מוכן (200 OK)</span>
+<span class="comment"># הדפדפן נשאר באותו URL</span></pre></div>
+        </div>
+      </div>
+      <div>
+        <div class="col-head o">redirect()</div>
+        <div class="code-block">
+          <div class="code-body"><pre><span class="kw">return</span> <span class="fn">redirect</span>(
+    <span class="fn">url_for</span>(<span class="str">'home'</span>)
+)
+<span class="comment"># ↑ מחזיר 302 Redirect</span>
+<span class="comment"># הדפדפן ניגש ל-URL חדש</span></pre></div>
+        </div>
+      </div>
+    </div>
+    <div class="ann w" style="margin-top:0.5rem;">
+      <code>redirect אחרי POST</code>
+      <div class="desc"><strong>Post-Redirect-Get (PRG)</strong> — אחרי עיבוד טופס POST, תמיד מפנים עם redirect. כך רענון הדף לא ישלח את הטופס שוב!</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>// כיצד url_for() יוצר URLs?</h3>
+    <div class="code-block">
+      <div class="code-body"><pre>url_for(<span class="str">'home'</span>)      → <span class="str">'/'</span>
+url_for(<span class="str">'login'</span>)     → <span class="str">'/login'</span>
+url_for(<span class="str">'show_users'</span>) → <span class="str">'/users'</span>
+<span class="comment"># ↑ שם הפונקציה, לא ה-URL!
+# שימושי כי: אם נשנה את ה-URL ב-route — url_for יעדכן אוטומטית</span>
+
+url_for(<span class="str">'static'</span>, filename=<span class="str">'css/style.css'</span>) → <span class="str">'/static/css/style.css'</span></pre></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ SLIDE 7 ═══ -->
+<div class="slide" id="slide-7">
+  <div class="card cyan">
+    <h2><span class="icon">🧩</span> שלושה דפוסים חוזרים ב-main.py</h2>
+    <p>כמעט כל route בפרויקט עונה על אחד משלושה דפוסים. זיהויים יעזור לכם לכתוב routes חדשים:</p>
+  </div>
+
+  <div class="card">
+    <div class="col-head c">דפוס 1 — GET בלבד: מציג מידע</div>
+    <div class="code-block">
+      <div class="code-body"><pre><span class="dec">@app.route</span>(<span class="str">'/'</span>)
+<span class="kw">def</span> <span class="fn">home</span>():
+    <span class="hl-c"><span class="kw">return</span> <span class="fn">render_template</span>(<span class="str">'home.html'</span>, user=current_user)</span>
+
+<span class="comment"># גם: /users, /restricted (עם בדיקת הרשאה)</span></pre></div>
+    </div>
+    <p style="font-size:0.85rem;">פשוט — מקבל בקשה, מחזיר HTML.</p>
+  </div>
+
+  <div class="card">
+    <div class="col-head o">דפוס 2 — GET+POST: טופס</div>
+    <div class="code-block">
+      <div class="code-body"><pre><span class="dec">@app.route</span>(<span class="str">'/login'</span>, methods=[<span class="str">'GET'</span>, <span class="str">'POST'</span>])
+<span class="kw">def</span> <span class="fn">login</span>():
+    <span class="kw">if</span> request.method == <span class="str">'POST'</span>:
+<span class="hl-o">        <span class="comment"># ← עיבוד נתוני הטופס</span>
+        user = request.form[<span class="str">'username'</span>]
+        <span class="kw">if</span> user <span class="kw">in</span> valid_users:
+            <span class="fn">flash</span>(<span class="str">"נכנסת בהצלחה"</span>, <span class="str">"success"</span>)
+            <span class="kw">return</span> <span class="fn">redirect</span>(<span class="fn">url_for</span>(<span class="str">'home'</span>))
+        <span class="fn">flash</span>(<span class="str">f"משתמש לא קיים {user}"</span>, <span class="str">"error"</span>)</span>
+<span class="hl-g">    <span class="comment"># ← GET: מציג את הטופס הריק (גם אם POST נכשל)</span>
+    <span class="kw">return</span> <span class="fn">render_template</span>(<span class="str">'login.html'</span>, user=current_user, message=<span class="str">''</span>)</span></pre></div>
+    </div>
+    <p style="font-size:0.85rem;">GET → מציג. POST → מעבד → redirect אם הצלחה, render אם כישלון.</p>
+  </div>
+
+  <div class="card">
+    <div class="col-head g">דפוס 3 — פעולה + redirect</div>
+    <div class="code-block">
+      <div class="code-body"><pre><span class="dec">@app.route</span>(<span class="str">'/logout'</span>)
+<span class="kw">def</span> <span class="fn">logout</span>():
+    <span class="kw">global</span> current_user
+<span class="hl-g">    <span class="fn">flash</span>(<span class="str">f"התנתקת בהצלחה! {current_user}"</span>, <span class="str">"success"</span>)
+    current_user = <span class="str">'Guest'</span>
+    <span class="kw">return</span> <span class="fn">redirect</span>(<span class="fn">url_for</span>(<span class="str">'home'</span>))</span>
+
+<span class="comment"># לא מציג תבנית — פועל ומפנה</span></pre></div>
+    </div>
+    <p style="font-size:0.85rem;">מבצע פעולה (איפוס, שמירה) ואז תמיד מפנה. אין HTML ישיר.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ SLIDE 8 ═══ -->
+<div class="slide" id="slide-8">
+  <div class="card cyan">
+    <h2><span class="icon">🧪</span> בדקו את עצמכם!</h2>
+  </div>
+
+  <div class="card" id="q1-card">
+    <div class="quiz-q">// שאלה 1 — מדוע Flask מחפש קבצי HTML בתיקייה ששמה templates ולא בשם אחר?</div>
+    <div class="quiz-options">
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,false,'q1')">כי זו מוסכמה שניתן לשנות בהגדרות אבל רוב הזמן לא שווה</div>
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,true,'q1')">זו מוסכמה קבועה של Flask — render_template() מחפש אוטומטית בתיקייה בשם templates. שם אחר לא יעבוד כברירת מחדל</div>
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,false,'q1')">כי Jinja2 מחייב זאת</div>
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,false,'q1')">כי מערכת ההפעלה מחייבת שם זה</div>
+    </div>
+    <div class="quiz-feedback" id="q1-fb"></div>
+  </div>
+
+  <div class="card" id="q2-card">
+    <div class="quiz-q">// שאלה 2 — מה יקרה אם נשכח לכתוב <ic>global current_user</ic> בתוך login()?</div>
+    <div class="quiz-options">
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,false,'q2')">Python תזרוק שגיאת syntax מיידית</div>
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,true,'q2')">הפונקציה תיצור משתנה מקומי חדש — current_user הגלובלי לא ישתנה, והמשתמש לא יהיה "מחובר" מחוץ לפונקציה</div>
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,false,'q2')">valid_users תתרוקן</div>
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,false,'q2')">Flask יאתחל מחדש</div>
+    </div>
+    <div class="quiz-feedback" id="q2-fb"></div>
+  </div>
+
+  <div class="card" id="q3-card">
+    <div class="quiz-q">// שאלה 3 — מדוע logout() משתמש ב-redirect ולא ב-render_template?</div>
+    <div class="quiz-options">
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,false,'q3')">כי אין תבנית logout.html</div>
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,false,'q3')">כי render_template לא עובד עם flash</div>
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,true,'q3')">כי logout היא פעולה ולא דף — אחריה המשתמש צריך לראות דף אחר. גם מונע שליחת הפעולה שוב ברענון</div>
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,false,'q3')">כי redirect מהיר יותר</div>
+    </div>
+    <div class="quiz-feedback" id="q3-fb"></div>
+  </div>
+
+  <div class="card" id="q4-card">
+    <div class="quiz-q">// שאלה 4 — מה ההבדל בין <ic>url_for('home')</ic> לבין <ic>url_for('show_users')</ic>?</div>
+    <div class="quiz-options">
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q4')">url_for('home') → '/home' , url_for('show_users') → '/show_users'</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,true,'q4')">url_for('home') → '/' , url_for('show_users') → '/users'<br><span style="font-size:0.8em;opacity:0.8">// url_for מחזיר לפי ה-route, לא שם הפונקציה</span></div>
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q4')">url_for('home') → '/home' , url_for('show_users') → '/users'</div>
+      <div class="quiz-opt" onclick="checkQuiz(this,false,'q4')">זהים — שניהם מחזירים '/'</div>
+    </div>
+    <div class="quiz-feedback" id="q4-fb"></div>
+  </div>
+
+  <div class="card" id="q5-card">
+    <div class="quiz-q">// שאלה 5 — רוצים להוסיף דף /about. מה השלבים הנדרשים?</div>
+    <div class="quiz-options">
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,false,'q5')">יוצרים about.html בתיקיית static ומוסיפים לינק בתפריט</div>
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,true,'q5')">1. יוצרים templates/about.html שיורש מbase.html<br>2. מוסיפים route ב-main.py עם @app.route('/about')<br>3. מוסיפים לינק בתפריט של base.html</div>
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,false,'q5')">מוסיפים רק route ב-main.py — Flask יוצר את ה-HTML אוטומטית</div>
+      <div class="quiz-opt rtl" onclick="checkQuiz(this,false,'q5')">מוסיפים רק about.html לתיקיית templates</div>
+    </div>
+    <div class="quiz-feedback" id="q5-fb"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ SLIDE 9 ═══ -->
+<div class="slide" id="slide-9">
+  <div class="completion">
+    <div class="trophy">🏗️</div>
+    <h2>// COMPLETE</h2>
+    <p>// סיימתם את לומדת מבנה הפרויקט</p>
+  </div>
+
+  <div class="card cyan">
+    <h2><span class="icon">📋</span> סיכום — מה למדנו</h2>
+    <ul class="checklist">
+      <li>מבנה הפרויקט: main.py + templates/ + static/ — כל אחד ותפקידו</li>
+      <li>main.py בנוי מ-4 חלקים: ייבואים, אתחול, routes, הפעלה</li>
+      <li>decorator @app.route קושר URL לפונקציה Python</li>
+      <li>methods=['GET','POST'] — GET מציג, POST מעבד נתונים</li>
+      <li>render_template מחזיר HTML, redirect שולח לURL אחר</li>
+      <li>url_for מייצר URL לפי שם פונקציה — עדיף על URL ידני</li>
+      <li>global current_user — נדרש בפונקציות שמשנות משתנה גלובלי</li>
+      <li>valid_users בזיכרון בלבד — בפרויקט אמיתי: Database</li>
+    </ul>
+  </div>
+
+  <div class="card" style="border-color:rgba(0,212,255,0.4);background:rgba(0,212,255,0.03);">
+    <h2><span class="icon">🚀</span> משימת המשך</h2>
+    <p>פותחים את הפרויקט ומנסים:</p>
+    <br>
+    <p><strong>1.</strong> מוסיפים route חדש <ic>/about</ic> עם תבנית <ic>about.html</ic> שמציגה מידע על האתר — עם קישור בתפריט</p>
+    <p><strong>2.</strong> מוסיפים הדפסת <ic>print(f"Request: {request.method} {request.path}")</ic> בתחילת כל route — וצופים בטרמינל בזמן הניווט</p>
+    <p><strong>3.</strong> <strong>אתגר בונוס:</strong> מוסיפים route <ic>/stats</ic> שמציג כמה משתמשים רשומים (<ic>len(valid_users)</ic>) — ומנסים להבין מה צריך לשלוח ל-render_template</p>
+  </div>
+</div>
+
+<!-- Navigation -->
+<div class="btn-row">
+  <button class="btn btn-secondary" id="prevBtn" disabled>← PREV</button>
+  <span class="slide-num" id="slideNum">[ 01 / 09 ]</span>
+  <button class="btn btn-primary" id="nextBtn">NEXT →</button>
+</div>
+</div>
+
+<script>
+const TOTAL = 9;
+let current = 1;
+const quizAnswered = {};
+
+const ROUTES = {
+  home: {
+    url: 'GET /',
+    methods: ['GET'],
+    fn: 'home()',
+    desc: 'הפשוט ביותר — מקבל בקשה GET ומחזיר את דף הבית. לא בודק כלום, לא מעבד כלום.',
+    code: `@app.route('/')
+def home():
+    return render_template('home.html', user=current_user)
+# ↑ מעביר את שם המשתמש לתבנית
+# base.html ישתמש בו להצגת "Welcome X !"`
+  },
+  login: {
+    url: 'GET / POST /login',
+    methods: ['GET','POST'],
+    fn: 'login()',
+    desc: 'GET: מציג טופס login ריק. POST: בודק אם המשתמש קיים ב-valid_users. הצלחה → redirect לבית. כישלון → מציג שוב עם הודעת שגיאה.',
+    code: `@app.route('/login', methods=['GET', 'POST'])
+def login():
+    global current_user
+    if request.method == 'POST':
+        user = request.form['username']
+        if user in valid_users:
+            current_user = user
+            flash(" !נכנסת בהצלחה", "success")
+            return redirect(url_for('home'))
+        else:
+            flash(f"משתמש לא קיים {user}", "error")
+    return render_template('login.html', user=current_user, message='')`
+  },
+  logout: {
+    url: 'GET /logout',
+    methods: ['GET'],
+    fn: 'logout()',
+    desc: 'מאפס את current_user חזרה ל-Guest, שולח Flash של התנתקות מוצלחת, ומפנה לדף הבית.',
+    code: `@app.route('/logout')
+def logout():
+    global current_user
+    flash(f"התנתקת בהצלחה! {current_user}", "success")
+    current_user = 'Guest'
+    return redirect(url_for('home'))`
+  },
+  restricted: {
+    url: 'GET /restricted',
+    methods: ['GET'],
+    fn: 'restricted()',
+    desc: 'בודק אם המשתמש מחובר. מחובר → מציג את הדף. אורח → מחזיר HTML גולמי בלי עיצוב (שיפור אפשרי: redirect עם flash).',
+    code: `@app.route('/restricted')
+def restricted():
+    if current_user != 'Guest':
+        return render_template('restricted.html', user=current_user)
+    else:
+        return '<h1> access denied </h1>'`
+  },
+  signup: {
+    url: 'GET / POST /signup',
+    methods: ['GET','POST'],
+    fn: 'signup()',
+    desc: 'GET: מציג טופס הרשמה. POST: בודק שהשם לא תפוס, מוסיף ל-valid_users, מפנה ל-login עם Flash.',
+    code: `@app.route('/signup', methods=['GET', 'POST'])
+def signup():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        email    = request.form['email']
+        phone    = request.form['phone']
+        if username in valid_users:
+            flash(f"משתמש קיים {username}", "error")
+            return render_template('signup.html', user=current_user, message='Username already taken.')
+        valid_users.append(username)
+        flash(f"{username} נרשמת בהצלחה", "success")
+        return redirect(url_for('login'))
+    return render_template('signup.html', user=current_user, message='')`
+  },
+  users: {
+    url: 'GET /users',
+    methods: ['GET'],
+    fn: 'show_users()',
+    desc: 'מעביר את רשימת valid_users לתבנית. users.html מציגה אותה בטבלה עם לולאת Jinja2.',
+    code: `@app.route("/users")
+def show_users():
+    return render_template("users.html", user=current_user, users=valid_users)
+# ↑ שני פרמטרים: user לתפריט, users לטבלה`
+  }
+};
+
+const feedbacks = {
+  q1: {
+    correct: '✓ נכון! Flask מחפש templates/ אוטומטית. אפשר לשנות עם template_folder בהגדרת Flask(), אבל זה נדיר.',
+    wrong: '✗ לא מדויק. Flask מחפש ב-templates/ בברירת מחדל. אם שם התיקייה שונה, render_template יזרוק שגיאה TemplateNotFound.'
+  },
+  q2: {
+    correct: '✓ בדיוק! Python יוצרת משתנה מקומי חדש בתוך הפונקציה. הגלובלי לא משתנה — current_user יישאר Guest מחוץ לפונקציה.',
+    wrong: '✗ לא מדויק. בלי global, Python יוצרת משתנה מקומי. ההשמה current_user = user לא תשפיע על המשתנה הגלובלי.'
+  },
+  q3: {
+    correct: '✓ נכון! logout היא פעולה — לא דף. redirect מונע גם שאם הדפדפן מרענן, הוא לא "יתנתק שוב" כי הבקשה כבר עברה ל-GET.',
+    wrong: '✗ לא מדויק. logout מבצעת פעולה (איפוס current_user) ומפנה לדף הבית. אין צורך ב-render_template כי אין תבנית logout.html.'
+  },
+  q4: {
+    correct: '✓ מצוין! url_for מחזיר לפי ה-@app.route, לא לפי שם הפונקציה. home() רשומה על "/" ו-show_users() רשומה על "/users".',
+    wrong: '✗ לא מדויק. url_for מחזיר את ה-URL מה-decorator @app.route. home() → "/" (לא "/home"), show_users() → "/users".'
+  },
+  q5: {
+    correct: '✓ נכון! כל שלושת הצעדים נדרשים: HTML בתיקיית templates, route ב-main.py, וקישור בתפריט של base.html.',
+    wrong: '✗ לא מדויק. צריך את שלושתם: תבנית HTML, route ב-main.py, וקישור בתפריט. בלי route — הURL לא קיים. בלי תבנית — render_template יכשל.'
+  }
+};
+
+function renderRouteDetail(key) {
+  const r = ROUTES[key];
+  const methods = r.methods.map(function(m) {
+    return '<span class="method-pill ' + (m === 'GET' ? 'mp-g' : 'mp-o') + '">' + m + '</span>';
+  }).join(' ');
+  document.getElementById('reDetail').innerHTML =
+    '<div class="re-url">' + r.url + '</div>' +
+    '<div class="re-methods">' + methods + '</div>' +
+    '<div class="re-fn">def ' + r.fn + '</div>' +
+    '<div class="re-desc">' + r.desc + '</div>' +
+    '<div class="re-code">' + r.code.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>';
+}
+
+function initDots() {
+  const c = document.getElementById('navDots');
+  for (let i = 1; i <= TOTAL; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 1 ? ' active' : '');
+    d.id = 'dot-' + i;
+    c.appendChild(d);
+    d.addEventListener('click', (function(n){ return function(){ goTo(n); }; })(i));
+  }
+}
+
+function goTo(n) {
+  document.getElementById('slide-' + current).classList.remove('active');
+  document.getElementById('dot-' + current).classList.remove('active');
+  if (current < n) document.getElementById('dot-' + current).classList.add('completed');
+  current = n;
+  document.getElementById('slide-' + current).classList.add('active');
+  document.getElementById('dot-' + current).classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  updateUI();
+}
+
+function changeSlide(dir) {
+  const next = current + dir;
+  if (next < 1 || next > TOTAL) return;
+  goTo(next);
+}
+
+function updateUI() {
+  document.getElementById('prevBtn').disabled = current === 1;
+  document.getElementById('nextBtn').textContent = current === TOTAL ? '✓ FIN' : 'NEXT →';
+  document.getElementById('slideNum').textContent = '[ 0' + current + ' / 0' + TOTAL + ' ]';
+  const pct = ((current - 1) / (TOTAL - 1)) * 100;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressText').textContent = '[ 0' + current + ' / 0' + TOTAL + ' ]';
+}
+
+function checkQuiz(el, isCorrect, qid) {
+  if (quizAnswered[qid]) return;
+  quizAnswered[qid] = true;
+  el.classList.add(isCorrect ? 'correct' : 'wrong');
+  const fb = document.getElementById(qid + '-fb');
+  fb.classList.add('show', isCorrect ? 'correct' : 'wrong');
+  fb.textContent = isCorrect ? feedbacks[qid].correct : feedbacks[qid].wrong;
+  if (!isCorrect) {
+    el.parentElement.querySelectorAll('.quiz-opt').forEach(function(opt) {
+      if (opt.getAttribute('onclick') && opt.getAttribute('onclick').includes('true')) opt.classList.add('correct');
+    });
+  }
+  document.querySelectorAll('#' + qid + '-card .quiz-opt').forEach(function(o) { o.classList.add('locked'); });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  initDots();
+  updateUI();
+  renderRouteDetail('home');
+
+  document.getElementById('prevBtn').addEventListener('click', function() { changeSlide(-1); });
+  document.getElementById('nextBtn').addEventListener('click', function() { changeSlide(1); });
+
+  document.querySelectorAll('.re-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.re-btn').forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      renderRouteDetail(btn.dataset.route);
+    });
+  });
+});
+</script>
+</body>
+</html>
